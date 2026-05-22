@@ -105,9 +105,9 @@ jobs:
             BRANCH="${{ github.ref_name }}"
             echo ">>> Syncing to origin/$BRANCH..."
             git remote prune origin || true
-            git fetch --force origin "refs/heads/$BRANCH:refs/heads/$BRANCH"
+            git fetch --force --prune origin "$BRANCH"
             git checkout "$BRANCH"
-            git reset --hard "HEAD"
+            git reset --hard "origin/$BRANCH"
 
             echo ">>> Installing Composer dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction
@@ -187,9 +187,9 @@ jobs:
             BRANCH="${{ github.ref_name }}"
             echo ">>> Syncing to origin/$BRANCH..."
             git remote prune origin || true
-            git fetch --force origin "refs/heads/$BRANCH:refs/heads/$BRANCH"
+            git fetch --force --prune origin "$BRANCH"
             git checkout "$BRANCH"
-            git reset --hard "HEAD"
+            git reset --hard "origin/$BRANCH"
 
             # Nuxt 4 / @clack/core require Node >= 20 (styleText in node:util)
             if [ -s "$HOME/.nvm/nvm.sh" ]; then
