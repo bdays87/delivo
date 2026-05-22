@@ -222,7 +222,19 @@ jobs:
 
             echo ">>> Building Nuxt..."
             npm run build
-            pm2 restart delivo-client 
+
+            if ! command -v pm2 >/dev/null 2>&1; then
+              echo ">>> pm2 not found under Node $NODE_VER, installing..."
+              npm install -g pm2
+            fi
+
+            echo ">>> Restarting (or starting) $PM2_APP via pm2..."
+            if pm2 describe "$PM2_APP" >/dev/null 2>&1; then
+              pm2 restart "$PM2_APP" --update-env
+            else
+              pm2 start .output/server/index.mjs --name "$PM2_APP"
+            fi
+
             echo ">>> Saving PM2 process list..."
             pm2 save
 
