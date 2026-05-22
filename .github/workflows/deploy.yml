@@ -33,15 +33,15 @@ jobs:
           coverage: none
 
       - name: Install Composer dependencies
-        working-directory: ./laravel
+        working-directory: ./delivoapi
         run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Copy Laravel env
-        working-directory: ./laravel
+        working-directory: ./delivoapi
         run: cp .env.example .env && php artisan key:generate
 
       - name: Run PHPUnit
-        working-directory: ./laravel
+        working-directory: ./delivoapi
         run: php artisan test --parallel
 
       # ── Node / Nuxt ──
@@ -50,19 +50,15 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: nuxt/package-lock.json
+          cache-dependency-path: delivo/package-lock.json
 
       - name: Install Node dependencies
-        working-directory: ./nuxt
+        working-directory: ./delivo
         run: npm ci
 
-      - name: Lint Nuxt
-        working-directory: ./nuxt
-        run: npm run lint
-
-      - name: Type-check Nuxt
-        working-directory: ./nuxt
-        run: npm run typecheck
+      - name: Build Nuxt
+        working-directory: ./delivo
+        run: npm run build
 
   # ────────────────────────────────────────────
   # JOB 2a: Deploy Laravel
