@@ -198,7 +198,7 @@ const slides: HeroSlide[] = [
     imagePosition: '74% 32%',
     ctaLabel: 'Start shopping',
     ctaTo: '#products',
-    secondaryCta: { label: 'Create account', to: '/auth/register' },
+    secondaryCta: { label: 'Read more', to: '/about/shoppers' },
     floating: {
       icon: 'lucide:truck',
       iconBg: 'bg-success/15 text-success',
@@ -219,7 +219,7 @@ const slides: HeroSlide[] = [
     imagePosition: '72% 30%',
     ctaLabel: 'Become a seller',
     ctaTo: '/vendor/apply',
-    secondaryCta: { label: 'Vendor dashboard', to: '/vendor' },
+    secondaryCta: { label: 'Read more', to: '/about/sellers' },
     floating: {
       icon: 'lucide:trending-up',
       iconBg: 'bg-primary/15 text-primary',
@@ -240,7 +240,7 @@ const slides: HeroSlide[] = [
     imagePosition: '68% 45%',
     ctaLabel: 'Send a parcel',
     ctaTo: '#parcel-delivery',
-    secondaryCta: { label: 'Track delivery', to: '#parcel-delivery' },
+    secondaryCta: { label: 'Read more', to: '/about/parcels' },
     floating: {
       icon: 'lucide:map-pin',
       iconBg: 'bg-info/15 text-info',
