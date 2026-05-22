@@ -1,13 +1,13 @@
 <template>
   <header class="sticky top-0 z-40 border-b border-base-300 bg-base-100/80 backdrop-blur">
-    <div class="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4">
-      <NuxtLink to="/" class="flex items-center gap-2">
-        <span class="grid h-10 w-10 place-items-center rounded-2xl bg-primary text-primary-content shadow-sm">
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 md:gap-4 md:py-4">
+      <NuxtLink to="/" class="flex shrink-0 items-center gap-2">
+        <span class="grid h-9 w-9 place-items-center rounded-2xl bg-primary text-primary-content shadow-sm md:h-10 md:w-10">
+          <svg class="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 7h11l2 4h5v6h-2a3 3 0 1 1-6 0H9a3 3 0 1 1-6 0V7z" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </span>
-        <span class="text-2xl font-extrabold tracking-tight">delivo<span class="text-primary">.</span></span>
+        <span class="text-xl font-extrabold tracking-tight md:text-2xl">delivo<span class="text-primary">.</span></span>
       </NuxtLink>
 
       <label class="input input-bordered hidden flex-1 items-center gap-2 rounded-full bg-base-200 md:flex">
@@ -23,8 +23,8 @@
         />
       </label>
 
-      <nav class="hidden items-center gap-1 lg:flex">
-        <!-- Currency toggle -->
+      <!-- Desktop nav (lg and up) -->
+      <nav class="ml-auto hidden items-center gap-1 lg:flex">
         <div class="join">
           <button
             :class="['btn btn-sm join-item rounded-l-full', currency.code === 'USD' ? 'btn-primary' : 'btn-ghost']"
@@ -76,8 +76,116 @@
           <span class="badge badge-sm bg-primary-content text-primary">{{ cartCount }}</span>
         </NuxtLink>
       </nav>
+
+      <!-- Mobile actions (always visible on small + medium screens) -->
+      <div class="ml-auto flex items-center gap-1 lg:hidden">
+        <NuxtLink
+          :to="auth.isAuthenticated ? '/cart' : '/auth/login'"
+          class="btn btn-ghost btn-sm relative rounded-full"
+          aria-label="Cart"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.7 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span
+            v-if="cartCount > 0"
+            class="badge badge-primary badge-xs absolute -right-1 -top-1"
+          >{{ cartCount }}</span>
+        </NuxtLink>
+
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm rounded-full"
+          aria-label="Open menu"
+          @click="mobileOpen = !mobileOpen"
+        >
+          <svg v-if="!mobileOpen" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round" />
+          </svg>
+          <svg v-else class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
     </div>
 
+    <!-- Mobile drawer panel -->
+    <div v-if="mobileOpen" class="border-t border-base-300 bg-base-100 lg:hidden">
+      <div class="mx-auto max-w-7xl space-y-4 px-4 py-4">
+        <label class="input input-bordered flex items-center gap-2 rounded-full bg-base-200">
+          <svg class="h-4 w-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" stroke-linecap="round" />
+          </svg>
+          <input
+            v-model="searchInput"
+            type="text"
+            placeholder="Search products"
+            class="grow bg-transparent"
+            @keyup.enter="onMobileSearch"
+          />
+        </label>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="join">
+            <button
+              :class="['btn btn-sm join-item rounded-l-full', currency.code === 'USD' ? 'btn-primary' : 'btn-ghost bg-base-200']"
+              @click="currency.setCode('USD')"
+            >USD</button>
+            <button
+              :class="['btn btn-sm join-item rounded-r-full', currency.code === 'ZWG' ? 'btn-primary' : 'btn-ghost bg-base-200']"
+              :disabled="!currency.hasZwgRate"
+              @click="currency.setCode('ZWG')"
+            >ZWG</button>
+          </div>
+          <NuxtLink
+            v-if="!auth.isAuthenticated"
+            to="/auth/login"
+            class="btn btn-sm btn-ghost rounded-full bg-base-200"
+            @click="closeMenu"
+          >Sign in</NuxtLink>
+          <NuxtLink
+            v-if="!auth.isAuthenticated"
+            to="/auth/register"
+            class="btn btn-sm btn-primary rounded-full"
+            @click="closeMenu"
+          >Sign up</NuxtLink>
+        </div>
+
+        <div v-if="auth.isAuthenticated" class="rounded-2xl bg-base-200/40 p-3 text-sm">
+          <div class="font-semibold">{{ auth.user?.name }}</div>
+          <div class="truncate text-xs opacity-60">{{ auth.user?.email }}</div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <NuxtLink to="/account" class="btn btn-xs btn-ghost rounded-full bg-base-100" @click="closeMenu">My account</NuxtLink>
+            <NuxtLink to="/account/orders" class="btn btn-xs btn-ghost rounded-full bg-base-100" @click="closeMenu">My orders</NuxtLink>
+            <button class="btn btn-xs btn-ghost rounded-full bg-base-100 text-error" @click="handleLogoutAndClose">Sign out</button>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-base-200/40 p-3">
+          <div class="px-2 text-xs font-semibold uppercase tracking-wider opacity-60">Shop</div>
+          <div class="mt-2 flex flex-wrap gap-1">
+            <NuxtLink to="/products" class="btn btn-xs btn-ghost rounded-full bg-base-100" @click="closeMenu">All</NuxtLink>
+            <NuxtLink
+              v-for="c in topCategories"
+              :key="c.id"
+              :to="`/products?category_id=${c.id}`"
+              class="btn btn-xs btn-ghost rounded-full bg-base-100"
+              @click="closeMenu"
+            >{{ c.name }}</NuxtLink>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs opacity-70">
+          <svg class="h-4 w-4 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Delivered anywhere in Zimbabwe
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop category strip -->
     <div class="hidden border-t border-base-300 lg:block">
       <div class="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4 py-2 text-sm">
         <NuxtLink
@@ -110,6 +218,7 @@ const route = useRoute();
 const router = useRouter();
 
 const cartCount = computed(() => cart.itemCount);
+const mobileOpen = ref(false);
 
 onMounted(() => {
   categoryStore.fetchActive();
@@ -122,6 +231,11 @@ watch(() => auth.isAuthenticated, (loggedIn) => {
   } else {
     cart.reset();
   }
+});
+
+// Close the mobile drawer whenever the route changes.
+watch(() => route.fullPath, () => {
+  mobileOpen.value = false;
 });
 
 const topCategories = computed(() => categoryStore.categories.slice(0, 8));
@@ -146,6 +260,15 @@ const submitSearch = () => {
   });
 };
 
+const onMobileSearch = () => {
+  submitSearch();
+  mobileOpen.value = false;
+};
+
+const closeMenu = () => {
+  mobileOpen.value = false;
+};
+
 const initials = computed(() => {
   const name = auth.user?.name ?? '';
   return name
@@ -162,5 +285,10 @@ const handleLogout = async () => {
   } catch (err) {
     console.error(err);
   }
+};
+
+const handleLogoutAndClose = async () => {
+  await handleLogout();
+  mobileOpen.value = false;
 };
 </script>
