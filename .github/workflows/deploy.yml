@@ -101,8 +101,10 @@ jobs:
 
             cd "$APP_DIR"
 
-            echo ">>> Pulling latest code..."
-            git pull origin ${{ github.ref_name }}
+            echo ">>> Syncing to origin/${{ github.ref_name }}..."
+            git fetch origin ${{ github.ref_name }}
+            git checkout ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
 
             echo ">>> Installing Composer dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction
@@ -172,8 +174,10 @@ jobs:
 
             cd "$APP_DIR"
 
-            echo ">>> Pulling latest code..."
-            git pull origin ${{ github.ref_name }}
+            echo ">>> Syncing to origin/${{ github.ref_name }}..."
+            git fetch origin ${{ github.ref_name }}
+            git checkout ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
 
             echo ">>> Installing Node dependencies..."
             npm ci
