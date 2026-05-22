@@ -104,10 +104,7 @@ jobs:
 
             BRANCH="${{ github.ref_name }}"
             echo ">>> Syncing to origin/$BRANCH..."
-            git remote prune origin || true
-            git fetch --force --prune origin "$BRANCH"
-            git checkout "$BRANCH"
-            git reset --hard "origin/$BRANCH"
+            git pull origin "$BRANCH"
 
             echo ">>> Installing Composer dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction
@@ -189,9 +186,7 @@ jobs:
 
             BRANCH="${{ github.ref_name }}"
             echo ">>> Syncing to origin/$BRANCH..."
-            git remote prune origin || true
-            git fetch --force --prune origin "$BRANCH"
-            git checkout -B "$BRANCH" "origin/$BRANCH"
+            git pull origin "$BRANCH"
 
             node_major() {
               node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0
