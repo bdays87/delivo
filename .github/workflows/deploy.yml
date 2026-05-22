@@ -247,11 +247,12 @@ jobs:
       - name: Nuxt health check
         run: |
           sleep 5
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://${{ secrets.VPS_HOST }})
+          URL="https://dev.anixsys.co.zw/"
+          echo "Checking $URL"
+          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" "$URL")
           echo "Health check status: $STATUS"
           if [ "$STATUS" != "200" ]; then
-            echo "Health check failed with status $STATUS"  
+            echo "Nuxt health check failed with status $STATUS"
             exit 1
           fi
 
