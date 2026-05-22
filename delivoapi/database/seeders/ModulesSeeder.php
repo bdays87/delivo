@@ -114,6 +114,13 @@ class ModulesSeeder extends Seeder
                         'default_permission' => 'can.access.mobile-wallets',
                         'sort_order' => 4,
                     ],
+                    [
+                        'name' => 'Delivery zones',
+                        'icon' => 'lucide:map-pinned',
+                        'url' => '/admin/delivery-zones',
+                        'default_permission' => 'can.access.delivery-zones',
+                        'sort_order' => 5,
+                    ],
                 ],
             ],
             [

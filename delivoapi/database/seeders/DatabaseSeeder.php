@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             CategoriesSeeder::class,
             ModulesSeeder::class,
             AdminUserSeeder::class,
+            DeliveryZonesSeeder::class,
             SampleVendorSeeder::class,
             SampleProductsSeeder::class,
         ]);

@@ -9,86 +9,88 @@
     <div class="absolute -top-24 -right-20 h-80 w-80 rounded-full bg-primary/15 blur-3xl"></div>
     <div class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-secondary/15 blur-3xl"></div>
 
-    <div class="relative mx-auto max-w-7xl px-4 py-10 md:py-14">
-      <div class="relative overflow-hidden rounded-[2.5rem] border border-base-300 bg-base-100 shadow-xl">
-        <!-- Slides -->
+    <!-- Carousel viewport: full width, fixed height -->
+    <div class="relative h-[min(82vh,720px)] min-h-[520px] w-full sm:min-h-[560px]">
+      <div class="h-full w-full overflow-hidden">
         <div
-          class="flex transition-transform duration-700 ease-out"
+          class="flex h-full transition-transform duration-700 ease-out"
           :style="{ transform: `translateX(-${active * 100}%)` }"
         >
           <article
             v-for="(slide, index) in slides"
             :key="slide.id"
-            class="relative grid w-full shrink-0 grid-cols-1 md:grid-cols-2"
+            class="relative h-full min-w-full shrink-0 grow-0 basis-full"
             :class="index === active ? 'z-10' : 'pointer-events-none'"
             :aria-hidden="index !== active"
           >
-            <!-- Copy -->
-            <div class="relative z-10 flex flex-col justify-center px-6 py-10 md:px-10 md:py-14 lg:px-14">
-              <div class="badge badge-lg gap-2 border-base-300 bg-base-200/80 px-4 py-3 font-medium">
-                <Icon :name="slide.badgeIcon" class="h-4 w-4 text-primary" />
-                {{ slide.badge }}
-              </div>
-              <h1 class="mt-5 text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl">
-                {{ slide.title }}
-                <span v-if="slide.titleAccent" class="text-primary">{{ slide.titleAccent }}</span>
-              </h1>
-              <p class="mt-4 max-w-lg text-base opacity-80 md:text-lg">
-                {{ slide.description }}
-              </p>
-              <div class="mt-8 flex flex-wrap gap-3">
-                <a
-                  v-if="isHashLink(slide.ctaTo)"
-                  :href="slide.ctaTo"
-                  class="btn btn-primary btn-lg rounded-full px-7"
-                  @click.prevent="followLink(slide.ctaTo)"
-                >
-                  {{ slide.ctaLabel }}
-                  <Icon name="lucide:arrow-right" class="h-4 w-4" />
-                </a>
-                <NuxtLink
-                  v-else
-                  :to="slide.ctaTo"
-                  class="btn btn-primary btn-lg rounded-full px-7"
-                >
-                  {{ slide.ctaLabel }}
-                  <Icon name="lucide:arrow-right" class="h-4 w-4" />
-                </NuxtLink>
+            <!-- Full-bleed background image -->
+            <img
+              :src="slide.image"
+              :alt="slide.imageAlt"
+              class="absolute inset-0 h-full w-full object-cover"
+              :style="{ objectPosition: slide.imagePosition }"
+              :loading="index === 0 ? 'eager' : 'lazy'"
+            />
+            <div
+              class="pointer-events-none absolute inset-0 bg-gradient-to-r from-base-100/95 via-base-100/75 to-base-100/25 md:from-base-100/92 md:via-base-100/55 md:to-transparent"
+            ></div>
 
-                <template v-if="slide.secondaryCta">
+            <!-- Content overlay -->
+            <div class="relative z-10 mx-auto flex h-full max-w-7xl items-center px-4 py-12 md:px-8 md:py-16">
+              <div class="max-w-xl">
+                <div class="badge badge-lg gap-2 border-base-300/80 bg-base-100/90 px-4 py-3 font-medium backdrop-blur-sm">
+                  <Icon :name="slide.badgeIcon" class="h-4 w-4 text-primary" />
+                  {{ slide.badge }}
+                </div>
+                <h1 class="mt-5 text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl">
+                  {{ slide.title }}
+                  <span v-if="slide.titleAccent" class="text-primary">{{ slide.titleAccent }}</span>
+                </h1>
+                <p class="mt-4 max-w-lg text-base opacity-80 md:text-lg">
+                  {{ slide.description }}
+                </p>
+                <div class="mt-8 flex flex-wrap gap-3">
                   <a
-                    v-if="isHashLink(slide.secondaryCta.to)"
-                    :href="slide.secondaryCta.to"
-                    class="btn btn-outline btn-lg rounded-full px-7"
-                    @click.prevent="followLink(slide.secondaryCta.to)"
+                    v-if="isHashLink(slide.ctaTo)"
+                    :href="slide.ctaTo"
+                    class="btn btn-primary btn-lg rounded-full px-7"
+                    @click.prevent="followLink(slide.ctaTo)"
                   >
-                    {{ slide.secondaryCta.label }}
+                    {{ slide.ctaLabel }}
+                    <Icon name="lucide:arrow-right" class="h-4 w-4" />
                   </a>
                   <NuxtLink
                     v-else
-                    :to="slide.secondaryCta.to"
-                    class="btn btn-outline btn-lg rounded-full px-7"
+                    :to="slide.ctaTo"
+                    class="btn btn-primary btn-lg rounded-full px-7"
                   >
-                    {{ slide.secondaryCta.label }}
+                    {{ slide.ctaLabel }}
+                    <Icon name="lucide:arrow-right" class="h-4 w-4" />
                   </NuxtLink>
-                </template>
-              </div>
-            </div>
 
-            <!-- Image -->
-            <div class="relative min-h-[280px] md:min-h-[420px]">
-              <img
-                :src="slide.image"
-                :alt="slide.imageAlt"
-                class="h-full w-full object-cover"
-                :loading="index === 0 ? 'eager' : 'lazy'"
-              />
-              <div
-                class="pointer-events-none absolute inset-0 bg-gradient-to-r from-base-100/90 via-base-100/40 to-transparent md:from-base-100/80 md:via-base-100/20"
-              ></div>
+                  <template v-if="slide.secondaryCta">
+                    <a
+                      v-if="isHashLink(slide.secondaryCta.to)"
+                      :href="slide.secondaryCta.to"
+                      class="btn btn-outline btn-lg rounded-full border-base-300 bg-base-100/80 px-7 backdrop-blur-sm"
+                      @click.prevent="followLink(slide.secondaryCta.to)"
+                    >
+                      {{ slide.secondaryCta.label }}
+                    </a>
+                    <NuxtLink
+                      v-else
+                      :to="slide.secondaryCta.to"
+                      class="btn btn-outline btn-lg rounded-full border-base-300 bg-base-100/80 px-7 backdrop-blur-sm"
+                    >
+                      {{ slide.secondaryCta.label }}
+                    </NuxtLink>
+                  </template>
+                </div>
+              </div>
+
               <div
                 v-if="slide.floating"
-                class="absolute bottom-6 right-6 hidden max-w-[220px] rounded-2xl bg-base-100/95 p-4 shadow-xl backdrop-blur md:block"
+                class="absolute bottom-8 right-4 hidden max-w-[220px] rounded-2xl bg-base-100/95 p-4 shadow-xl backdrop-blur md:right-8 md:block lg:right-12"
               >
                 <div class="flex items-center gap-3">
                   <span
@@ -106,50 +108,50 @@
             </div>
           </article>
         </div>
-
-        <!-- Prev / next -->
-        <button
-          type="button"
-          class="btn btn-circle btn-ghost absolute left-3 top-1/2 z-10 -translate-y-1/2 bg-base-100/80 backdrop-blur md:left-5"
-          aria-label="Previous slide"
-          @click="prev"
-        >
-          <Icon name="lucide:chevron-left" class="h-6 w-6" />
-        </button>
-        <button
-          type="button"
-          class="btn btn-circle btn-ghost absolute right-3 top-1/2 z-10 -translate-y-1/2 bg-base-100/80 backdrop-blur md:right-5"
-          aria-label="Next slide"
-          @click="next"
-        >
-          <Icon name="lucide:chevron-right" class="h-6 w-6" />
-        </button>
       </div>
 
-      <!-- Dots + progress -->
-      <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <button
-          v-for="(slide, index) in slides"
-          :key="`dot-${slide.id}`"
-          type="button"
-          class="group flex items-center gap-2 rounded-full px-3 py-2 transition"
-          :class="index === active ? 'bg-primary/10' : 'hover:bg-base-300/60'"
-          :aria-label="`Go to slide ${index + 1}: ${slide.badge}`"
-          :aria-current="index === active ? 'true' : undefined"
-          @click="goTo(index)"
+      <!-- Prev / next -->
+      <button
+        type="button"
+        class="btn btn-circle btn-ghost absolute left-3 top-1/2 z-20 -translate-y-1/2 bg-base-100/80 backdrop-blur md:left-6"
+        aria-label="Previous slide"
+        @click="prev"
+      >
+        <Icon name="lucide:chevron-left" class="h-6 w-6" />
+      </button>
+      <button
+        type="button"
+        class="btn btn-circle btn-ghost absolute right-3 top-1/2 z-20 -translate-y-1/2 bg-base-100/80 backdrop-blur md:right-6"
+        aria-label="Next slide"
+        @click="next"
+      >
+        <Icon name="lucide:chevron-right" class="h-6 w-6" />
+      </button>
+    </div>
+
+    <!-- Dots -->
+    <div class="relative mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-3 px-4 py-6">
+      <button
+        v-for="(slide, index) in slides"
+        :key="`dot-${slide.id}`"
+        type="button"
+        class="group flex items-center gap-2 rounded-full px-3 py-2 transition"
+        :class="index === active ? 'bg-primary/10' : 'hover:bg-base-300/60'"
+        :aria-label="`Go to slide ${index + 1}: ${slide.badge}`"
+        :aria-current="index === active ? 'true' : undefined"
+        @click="goTo(index)"
+      >
+        <span
+          class="h-2.5 rounded-full transition-all"
+          :class="index === active ? 'w-8 bg-primary' : 'w-2.5 bg-base-content/25 group-hover:bg-base-content/40'"
+        ></span>
+        <span
+          class="hidden text-xs font-semibold sm:inline"
+          :class="index === active ? 'text-primary' : 'opacity-60'"
         >
-          <span
-            class="h-2.5 rounded-full transition-all"
-            :class="index === active ? 'w-8 bg-primary' : 'w-2.5 bg-base-content/25 group-hover:bg-base-content/40'"
-          ></span>
-          <span
-            class="hidden text-xs font-semibold sm:inline"
-            :class="index === active ? 'text-primary' : 'opacity-60'"
-          >
-            {{ slide.badge }}
-          </span>
-        </button>
-      </div>
+          {{ slide.badge }}
+        </span>
+      </button>
     </div>
   </section>
 </template>
@@ -169,6 +171,8 @@ interface HeroSlide {
   description: string;
   image: string;
   imageAlt: string;
+  /** Keeps faces in frame when the viewport is wider than the artwork (16:9). */
+  imagePosition: string;
   ctaLabel: string;
   ctaTo: string;
   secondaryCta?: SlideCta;
@@ -191,6 +195,7 @@ const slides: HeroSlide[] = [
       'Shop groceries, fashion, electronics and more from trusted local vendors — picked, packed and brought to your door anywhere in Zimbabwe.',
     image: '/images/hero/customers.png',
     imageAlt: 'Customer receiving a Delivo delivery at home',
+    imagePosition: '74% 32%',
     ctaLabel: 'Start shopping',
     ctaTo: '#products',
     secondaryCta: { label: 'Create account', to: '/auth/register' },
@@ -211,6 +216,7 @@ const slides: HeroSlide[] = [
       'List products, manage orders and get paid — reach customers across the country without building your own website or delivery network.',
     image: '/images/hero/vendors.png',
     imageAlt: 'Vendor managing products in their shop',
+    imagePosition: '72% 30%',
     ctaLabel: 'Become a seller',
     ctaTo: '/vendor/apply',
     secondaryCta: { label: 'Vendor dashboard', to: '/vendor' },
@@ -231,6 +237,7 @@ const slides: HeroSlide[] = [
       'Book affordable courier runs for documents, gifts and packages — tracked from pickup to drop-off in Harare, Bulawayo and beyond.',
     image: '/images/hero/parcels.png',
     imageAlt: 'Courier delivering a parcel to a customer',
+    imagePosition: '68% 45%',
     ctaLabel: 'Send a parcel',
     ctaTo: '#parcel-delivery',
     secondaryCta: { label: 'Track delivery', to: '#parcel-delivery' },

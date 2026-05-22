@@ -16,8 +16,8 @@ export const usePublicVendorStore = defineStore('publicVendor', () => {
   const { listActiveVendors } = useVendorPublicHelper();
   const toast = useToast();
 
-  const fetchActive = async () => {
-    if (vendors.value.length) return;
+  const fetchActive = async (force = false) => {
+    if (vendors.value.length && !force) return;
     loading.value = true;
     const { data, error } = await listActiveVendors();
     if (!error.value) {

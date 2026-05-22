@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AdminCategoryController;
+use App\Http\Controllers\Api\Admin\AdminDeliveryZoneController;
 use App\Http\Controllers\Api\Admin\AdminExchangeRateController;
 use App\Http\Controllers\Api\Admin\AdminMobileWalletController;
+use App\Http\Controllers\Api\Admin\AdminPlatformSettingsController;
 use App\Http\Controllers\Api\Admin\AdminProductController;
 use App\Http\Controllers\Api\Admin\AdminVendorController;
 use App\Http\Controllers\Api\Auth\AuthController;
@@ -20,6 +22,9 @@ use App\Http\Controllers\Api\Vendor\VendorProductController;
 use App\Http\Controllers\Api\VendorPublicController;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Route;
+
+
+
 
 Route::prefix('v1')->group(function () {
     Route::get('ping', fn () => ApiResponse::success(['pong' => true], 'Delivo API is up.'))
@@ -67,6 +72,7 @@ Route::prefix('v1')->group(function () {
         Route::post('addresses/{id}/default', [AddressController::class, 'setDefault'])
             ->whereNumber('id')->name('v1.addresses.default');
 
+        Route::post('checkout/quote', [CheckoutController::class, 'quote'])->name('v1.checkout.quote');
         Route::post('checkout', [CheckoutController::class, 'place'])->name('v1.checkout.place');
 
         Route::get('orders', [OrderController::class, 'index'])->name('v1.orders.index');
@@ -148,6 +154,24 @@ Route::prefix('v1')->group(function () {
                 ->name('v1.admin.exchange-rates.show');
             Route::put('exchange-rates/usd-zwg', [AdminExchangeRateController::class, 'update'])
                 ->name('v1.admin.exchange-rates.update');
+
+            // Platform settings (service charge, default delivery fee)
+            Route::get('platform-settings', [AdminPlatformSettingsController::class, 'show'])
+                ->name('v1.admin.platform-settings.show');
+            Route::put('platform-settings', [AdminPlatformSettingsController::class, 'update'])
+                ->name('v1.admin.platform-settings.update');
+
+            // Delivery zones (per-city delivery fees)
+            Route::get('delivery-zones', [AdminDeliveryZoneController::class, 'index'])
+                ->name('v1.admin.delivery-zones.index');
+            Route::post('delivery-zones', [AdminDeliveryZoneController::class, 'store'])
+                ->name('v1.admin.delivery-zones.store');
+            Route::get('delivery-zones/{id}', [AdminDeliveryZoneController::class, 'show'])
+                ->whereNumber('id')->name('v1.admin.delivery-zones.show');
+            Route::put('delivery-zones/{id}', [AdminDeliveryZoneController::class, 'update'])
+                ->whereNumber('id')->name('v1.admin.delivery-zones.update');
+            Route::delete('delivery-zones/{id}', [AdminDeliveryZoneController::class, 'destroy'])
+                ->whereNumber('id')->name('v1.admin.delivery-zones.destroy');
         });
     });
 });

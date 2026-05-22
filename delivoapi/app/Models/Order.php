@@ -40,6 +40,7 @@ class Order extends Model
         'ship_notes',
         'status',
         'subtotal_usd',
+        'service_charge_usd',
         'shipping_usd',
         'total_usd',
         'usd_to_zwg_rate',
@@ -52,6 +53,7 @@ class Order extends Model
     {
         return [
             'subtotal_usd' => 'decimal:2',
+            'service_charge_usd' => 'decimal:2',
             'shipping_usd' => 'decimal:2',
             'total_usd' => 'decimal:2',
             'usd_to_zwg_rate' => 'decimal:6',

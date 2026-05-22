@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-base-100 text-base-content">
+  <div class="flex min-h-screen flex-col bg-base-100 text-base-content">
     <StorefrontPromoBar />
     <StorefrontHeader />
-    <main>
+    <main class="flex-1">
       <slot />
     </main>
     <StorefrontFooter />

@@ -1,6 +1,6 @@
 <template>
   <section id="products" class="scroll-mt-24 bg-base-200 py-16">
-    <div class="mx-auto max-w-7xl px-4">
+    <div class="mx-auto w-full max-w-[1600px] px-4 md:px-6 lg:px-8">
       <div class="mb-8 flex items-end justify-between">
         <div>
           <p class="text-sm font-semibold uppercase tracking-wider text-primary">Fresh on Delivo</p>
@@ -19,7 +19,7 @@
         Vendors are getting set up. Check back soon.
       </div>
 
-      <div v-else class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+      <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         <StorefrontProductCard v-for="p in products" :key="p.id" :product="p" />
       </div>
     </div>
@@ -37,7 +37,7 @@ const currency = useCurrencyStore();
 
 onMounted(async () => {
   loading.value = true;
-  const { data, error } = await listProducts({ per_page: 10 });
+  const { data, error } = await listProducts({ per_page: 12 });
   if (!error.value) {
     const payload = (data.value as any)?.data ?? {};
     products.value = payload.items ?? [];

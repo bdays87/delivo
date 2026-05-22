@@ -73,7 +73,7 @@
             <path d="M1 1h4l2.7 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
           Cart
-          <span class="badge badge-sm bg-primary-content text-primary">0</span>
+          <span class="badge badge-sm bg-primary-content text-primary">{{ cartCount }}</span>
         </NuxtLink>
       </nav>
     </div>
@@ -105,10 +105,24 @@
 const auth = useAuthStore();
 const currency = useCurrencyStore();
 const categoryStore = useCategoryStore();
+const cart = useCartStore();
 const route = useRoute();
 const router = useRouter();
 
-onMounted(() => categoryStore.fetchActive());
+const cartCount = computed(() => cart.itemCount);
+
+onMounted(() => {
+  categoryStore.fetchActive();
+  if (auth.isAuthenticated) cart.ensureLoaded();
+});
+
+watch(() => auth.isAuthenticated, (loggedIn) => {
+  if (loggedIn) {
+    cart.refresh(true);
+  } else {
+    cart.reset();
+  }
+});
 
 const topCategories = computed(() => categoryStore.categories.slice(0, 8));
 

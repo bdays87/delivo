@@ -21,7 +21,38 @@ class CheckoutService
         private readonly IAddressInterface $addresses,
         private readonly IOrderInterface $orders,
         private readonly IExchangeRateInterface $rates,
+        private readonly PricingService $pricing,
     ) {}
+
+    /**
+     * Return a live breakdown for the user's cart against a chosen delivery
+     * address. The address must belong to the user. Stock is NOT validated
+     * here — that's place-order's job.
+     */
+    public function quote(User $user, int $addressId): array
+    {
+        $cart = $this->carts->loadWithItems($this->carts->findOrCreateForUser($user->id));
+        if ($cart->items->isEmpty()) {
+            return ['error' => 'Your cart is empty.', 'code' => 422];
+        }
+
+        $address = $this->addresses->findForUser($addressId, $user->id);
+        if ($address === null) {
+            return ['error' => 'Delivery address not found.', 'code' => 422];
+        }
+
+        $subtotal = 0.0;
+        foreach ($cart->items as $item) {
+            if ($item->product === null || $item->variant === null) {
+                continue;
+            }
+            $unit = $this->resolveUnitPrice($item->product, (int) $item->quantity);
+            $subtotal += $unit * (int) $item->quantity;
+        }
+        $subtotal = round($subtotal, 2);
+
+        return ['quote' => $this->pricing->quote($subtotal, $address)];
+    }
 
     /**
      * Place an order from the user's cart. Hard-blocks on stock-out (returns
@@ -97,8 +128,14 @@ class CheckoutService
 
         return DB::transaction(function () use ($user, $address, $wallet, $lines) {
             $subtotal = round(array_sum(array_column($lines, 'line_total')), 2);
-            $shipping = 0.00; // platform flat fee — admin Settings adds this in slice 10
-            $total = round($subtotal + $shipping, 2);
+
+            // Fees are recomputed server-side at place-time; client breakdown is
+            // for display only.
+            $serviceCharge = round($this->pricing->serviceChargeFor($subtotal), 2);
+            [$shipping] = $this->pricing->deliveryFeeForAddress($address);
+            $shipping = round((float) $shipping, 2);
+
+            $total = round($subtotal + $serviceCharge + $shipping, 2);
 
             $year = (int) date('Y');
             $seq = $this->orders->nextSequenceForYear($year);
@@ -119,6 +156,7 @@ class CheckoutService
                 'ship_notes' => $address->notes,
                 'status' => Order::STATUS_PENDING_PAYMENT,
                 'subtotal_usd' => $subtotal,
+                'service_charge_usd' => $serviceCharge,
                 'shipping_usd' => $shipping,
                 'total_usd' => $total,
                 'usd_to_zwg_rate' => $rate?->rate,

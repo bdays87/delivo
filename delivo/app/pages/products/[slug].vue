@@ -254,13 +254,22 @@ const primaryUrl = computed(() => {
   return chosen ? urlFor(chosen) : null;
 });
 
-const onAddToCart = () => {
-  // Cart wiring lands in Slice 8 — for now confirm intent visibly.
-  toast.success({
-    title: 'Coming soon',
-    message: 'Checkout flow is the next slice. We just made the catalogue real.',
-    position: 'topRight',
-    layout: 2,
-  });
+const auth = useAuthStore();
+const cart = useCartStore();
+const router = useRouter();
+
+const onAddToCart = async () => {
+  if (!auth.isAuthenticated) {
+    toast.info({
+      title: 'Sign in to continue',
+      message: 'Login or create an account to add to cart.',
+      position: 'topRight',
+      layout: 2,
+    });
+    router.push('/auth/login');
+    return;
+  }
+  if (!selectedVariant.value) return;
+  await cart.add(selectedVariant.value.id, qty.value);
 };
 </script>

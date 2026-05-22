@@ -2,17 +2,8 @@
   <div>
     <StorefrontHero />
     <StorefrontAiSearch />
-    <StorefrontCategoryGrid />
     <StorefrontTopProducts />
-    <StorefrontBestDeals />
     <StorefrontVendorGrid />
-    <StorefrontSavingsBands />
-    <StorefrontWeeklyPopular />
-    <StorefrontCashbackBanner />
-    <StorefrontTrendingTiles />
-    <StorefrontStoresNearYou />
-    <StorefrontServiceCards />
-    <StorefrontNewsletter />
   </div>
 </template>
 

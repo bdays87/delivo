@@ -5,10 +5,12 @@ namespace App\Providers;
 use App\Interfaces\Repositories\IAddressInterface;
 use App\Interfaces\Repositories\ICartInterface;
 use App\Interfaces\Repositories\ICategoryInterface;
+use App\Interfaces\Repositories\IDeliveryZoneInterface;
 use App\Interfaces\Repositories\IExchangeRateInterface;
 use App\Interfaces\Repositories\IMobileWalletInterface;
 use App\Interfaces\Repositories\IModuleInterface;
 use App\Interfaces\Repositories\IOrderInterface;
+use App\Interfaces\Repositories\IPlatformSettingsInterface;
 use App\Interfaces\Repositories\IProductImageInterface;
 use App\Interfaces\Repositories\IProductInterface;
 use App\Interfaces\Repositories\IProductPriceTierInterface;
@@ -20,10 +22,12 @@ use App\Interfaces\Repositories\IVendorPayoutAccountInterface;
 use App\Repositories\Eloquent\AddressRepository;
 use App\Repositories\Eloquent\CartRepository;
 use App\Repositories\Eloquent\CategoryRepository;
+use App\Repositories\Eloquent\DeliveryZoneRepository;
 use App\Repositories\Eloquent\ExchangeRateRepository;
 use App\Repositories\Eloquent\MobileWalletRepository;
 use App\Repositories\Eloquent\ModuleRepository;
 use App\Repositories\Eloquent\OrderRepository;
+use App\Repositories\Eloquent\PlatformSettingsRepository;
 use App\Repositories\Eloquent\ProductImageRepository;
 use App\Repositories\Eloquent\ProductPriceTierRepository;
 use App\Repositories\Eloquent\ProductRepository;
@@ -59,5 +63,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(IAddressInterface::class, AddressRepository::class);
         $this->app->bind(ICartInterface::class, CartRepository::class);
         $this->app->bind(IOrderInterface::class, OrderRepository::class);
+        $this->app->bind(IPlatformSettingsInterface::class, PlatformSettingsRepository::class);
+        $this->app->bind(IDeliveryZoneInterface::class, DeliveryZoneRepository::class);
     }
 }

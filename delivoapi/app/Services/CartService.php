@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\DB;
 
 class CartService
 {
-    public function __construct(private readonly ICartInterface $repo) {}
+    public function __construct(
+        private readonly ICartInterface $repo,
+        private readonly PricingService $pricing,
+    ) {}
 
     public function currentForUser(User $user): Cart
     {
@@ -63,11 +66,18 @@ class CartService
             ];
         }
 
+        $serviceCharge = $this->pricing->serviceChargeFor($subtotal);
+        $itemsTotal = round($subtotal + $serviceCharge, 2);
+
         return [
             'id' => $cart->id,
             'items' => $lines,
             'item_count' => array_sum(array_column($lines, 'quantity')),
             'subtotal_usd' => number_format($subtotal, 2, '.', ''),
+            'service_charge_usd' => number_format($serviceCharge, 2, '.', ''),
+            'items_total_usd' => number_format($itemsTotal, 2, '.', ''),
+            // Shipping is resolved at checkout once the customer picks an address.
+            'shipping_note' => 'Delivery calculated at checkout based on delivery city.',
         ];
     }
 

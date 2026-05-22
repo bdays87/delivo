@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\CartItemRequest;
 use App\Http\Requests\Customer\CartItemUpdateRequest;
 use App\Http\Responses\ApiResponse;
+use App\Interfaces\Repositories\ICartInterface;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\CartService;
@@ -41,7 +42,7 @@ class CartController extends Controller
 
     public function updateItem(CartItemUpdateRequest $request, int $itemId): JsonResponse
     {
-        $cartRepo = app(\App\Interfaces\Repositories\ICartInterface::class);
+        $cartRepo = app(ICartInterface::class);
         $item = $cartRepo->findItemForUser($itemId, $request->user()->id);
         if ($item === null) {
             return ApiResponse::notFound('Cart item not found.');
@@ -55,7 +56,7 @@ class CartController extends Controller
 
     public function removeItem(Request $request, int $itemId): JsonResponse
     {
-        $cartRepo = app(\App\Interfaces\Repositories\ICartInterface::class);
+        $cartRepo = app(ICartInterface::class);
         $item = $cartRepo->findItemForUser($itemId, $request->user()->id);
         if ($item === null) {
             return ApiResponse::notFound('Cart item not found.');
