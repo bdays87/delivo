@@ -132,7 +132,7 @@ jobs:
           else
             BASE="https://${VPS_HOST}"
           fi
-          URL="${BASE}/api/v1/ping"
+          URL="https://dev.anixsys.co.zw/api/v1/ping"
           echo "Checking $URL"
           BODY=$(curl -sfS "$URL")
           echo "$BODY"
