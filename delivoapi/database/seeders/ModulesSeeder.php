@@ -184,7 +184,7 @@ class ModulesSeeder extends Seeder
                 $subPermission = $this->ensurePermission($sub['default_permission']);
                 $grant[] = $subPermission->name;
 
-                Submodule::firstOrCreate(
+                $submodule = Submodule::firstOrCreate(
                     ['default_permission' => $sub['default_permission']],
                     [
                         'uuid' => (string) Str::uuid(),
@@ -197,6 +197,14 @@ class ModulesSeeder extends Seeder
                         'default_permission' => $sub['default_permission'],
                     ],
                 );
+
+                // Pivot backfill: every submodule owns its own default permission
+                // AND its parent module's default permission. The admin
+                // module-view endpoint also self-heals these on read.
+                $submodule->permissions()->syncWithoutDetaching([
+                    $modulePermission->id,
+                    $subPermission->id,
+                ]);
             }
         }
 

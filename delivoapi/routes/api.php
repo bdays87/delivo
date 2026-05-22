@@ -4,8 +4,10 @@ use App\Http\Controllers\Api\Admin\AdminCategoryController;
 use App\Http\Controllers\Api\Admin\AdminDeliveryZoneController;
 use App\Http\Controllers\Api\Admin\AdminExchangeRateController;
 use App\Http\Controllers\Api\Admin\AdminMobileWalletController;
+use App\Http\Controllers\Api\Admin\AdminModuleController;
 use App\Http\Controllers\Api\Admin\AdminPlatformSettingsController;
 use App\Http\Controllers\Api\Admin\AdminProductController;
+use App\Http\Controllers\Api\Admin\AdminRoleController;
 use App\Http\Controllers\Api\Admin\AdminVendorController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\CategoryController;
@@ -175,6 +177,31 @@ Route::prefix('v1')->group(function () {
                 ->whereNumber('id')->name('v1.admin.delivery-zones.update');
             Route::delete('delivery-zones/{id}', [AdminDeliveryZoneController::class, 'destroy'])
                 ->whereNumber('id')->name('v1.admin.delivery-zones.destroy');
+
+            // System modules tree (read-only). Modules + submodules + permissions
+            // are seeder-managed. The submodule-permissions endpoint self-heals
+            // the two default permissions on every read.
+            Route::get('modules', [AdminModuleController::class, 'index'])->name('v1.admin.modules.index');
+            Route::get('modules/tree', [AdminModuleController::class, 'tree'])->name('v1.admin.modules.tree');
+            Route::get('modules/{id}', [AdminModuleController::class, 'show'])
+                ->whereNumber('id')->name('v1.admin.modules.show');
+            Route::get('modules/{moduleId}/submodules/{submoduleId}/permissions', [AdminModuleController::class, 'submodulePermissions'])
+                ->whereNumber(['moduleId', 'submoduleId'])
+                ->name('v1.admin.modules.submodule-permissions');
+            Route::get('permissions', [AdminModuleController::class, 'allPermissions'])
+                ->name('v1.admin.permissions.index');
+
+            // Roles CRUD + permission assignment.
+            Route::get('roles', [AdminRoleController::class, 'index'])->name('v1.admin.roles.index');
+            Route::post('roles', [AdminRoleController::class, 'store'])->name('v1.admin.roles.store');
+            Route::get('roles/{id}', [AdminRoleController::class, 'show'])
+                ->whereNumber('id')->name('v1.admin.roles.show');
+            Route::put('roles/{id}', [AdminRoleController::class, 'update'])
+                ->whereNumber('id')->name('v1.admin.roles.update');
+            Route::delete('roles/{id}', [AdminRoleController::class, 'destroy'])
+                ->whereNumber('id')->name('v1.admin.roles.destroy');
+            Route::post('roles/{id}/permissions/sync', [AdminRoleController::class, 'syncPermissions'])
+                ->whereNumber('id')->name('v1.admin.roles.permissions.sync');
         });
     });
 });
