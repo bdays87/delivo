@@ -227,7 +227,7 @@ jobs:
 
             echo ">>> Restarting (or starting) $PM2_APP via pm2..."
              pm2 restart all
-            fi
+            
 
             echo ">>> Saving PM2 process list..."
             pm2 save
