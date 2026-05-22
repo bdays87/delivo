@@ -197,7 +197,25 @@ jobs:
               node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0
             }
 
-        
+            echo ">>> Activating Node $NODE_VER via nvm..."
+            export NVM_DIR="$HOME/.nvm"
+            # shellcheck disable=SC1091
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            if ! command -v nvm >/dev/null 2>&1; then
+              echo "ERROR: nvm not found on VPS for user $(whoami). Install nvm for the deploy user or hard-pin Node $NODE_VER in PATH."
+              exit 1
+            fi
+
+            nvm install "$NODE_VER" >/dev/null
+            nvm use "$NODE_VER"
+
+            CUR_MAJOR=$(node_major)
+            if [ "$CUR_MAJOR" -lt 20 ]; then
+              echo "ERROR: Node $CUR_MAJOR is too old for Nuxt 4. Need >= 20 (target $NODE_VER)."
+              exit 1
+            fi
+            echo ">>> Using Node $(node -v), npm $(npm -v)"
 
             echo ">>> Installing Node dependencies..."
             npm ci
