@@ -1,0 +1,215 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+env:
+  # Change these to match your VPS directory layout
+  LARAVEL_PATH: /var/www/apps/delivo/delivoapi
+  NUXT_PATH: /var/www/apps/delivo/delivo
+  PM2_APP_NAME: delivo-client
+
+jobs:
+  # ────────────────────────────────────────────
+  # JOB 1: Test
+  # ────────────────────────────────────────────
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── PHP / Laravel ──
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo, pdo_pgsql, bcmath, json, openssl
+          coverage: none
+
+      - name: Install Composer dependencies
+        working-directory: ./laravel
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Copy Laravel env
+        working-directory: ./laravel
+        run: cp .env.example .env && php artisan key:generate
+
+      - name: Run PHPUnit
+        working-directory: ./laravel
+        run: php artisan test --parallel
+
+      # ── Node / Nuxt ──
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: nuxt/package-lock.json
+
+      - name: Install Node dependencies
+        working-directory: ./nuxt
+        run: npm ci
+
+      - name: Lint Nuxt
+        working-directory: ./nuxt
+        run: npm run lint
+
+      - name: Type-check Nuxt
+        working-directory: ./nuxt
+        run: npm run typecheck
+
+  # ────────────────────────────────────────────
+  # JOB 2a: Deploy Laravel
+  # ────────────────────────────────────────────
+  deploy-laravel:
+    name: Deploy Laravel
+    runs-on: ubuntu-latest
+    needs: test
+    # Run on both branches, but use different env files via the SSH step
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+
+    steps:
+      - name: Deploy Laravel via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            set -e
+
+            # ── Choose the right directory based on branch ──
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              APP_DIR="${{ env.LARAVEL_PATH }}"
+            else
+              APP_DIR="${{ env.LARAVEL_PATH }}-staging"
+            fi
+
+            cd "$APP_DIR"
+
+            echo ">>> Pulling latest code..."
+            git pull origin ${{ github.ref_name }}
+
+            echo ">>> Installing Composer dependencies..."
+            composer install --no-dev --optimize-autoloader --no-interaction
+
+            echo ">>> Caching config, routes, and views..."
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            echo ">>> Running migrations..."
+            php artisan migrate --force
+
+            echo ">>> Clearing old caches..."
+            php artisan cache:clear
+
+            echo ">>> Reloading PHP-FPM..."
+            sudo systemctl reload php8.4-fpm
+
+            echo ">>> Laravel deployment complete."
+
+      - name: Laravel health check
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://${{ secrets.VPS_HOST }}/api/health)
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+
+  # ────────────────────────────────────────────
+  # JOB 2b: Deploy Nuxt
+  # ────────────────────────────────────────────
+  deploy-nuxt:
+    name: Deploy Nuxt
+    runs-on: ubuntu-latest
+    needs: test
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+
+    steps:
+      - name: Deploy Nuxt via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            set -e
+
+            # ── Choose the right directory based on branch ──
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              APP_DIR="${{ env.NUXT_PATH }}"
+              PM2_APP="${{ env.PM2_APP_NAME }}"
+            else
+              APP_DIR="${{ env.NUXT_PATH }}-staging"
+              PM2_APP="${{ env.PM2_APP_NAME }}-staging"
+            fi
+
+            cd "$APP_DIR"
+
+            echo ">>> Pulling latest code..."
+            git pull origin ${{ github.ref_name }}
+
+            echo ">>> Installing Node dependencies..."
+            npm ci
+
+            echo ">>> Building Nuxt..."
+            npm run build
+
+            echo ">>> Reloading PM2 process..."
+            pm2 reload "$PM2_APP" --update-env || pm2 start .output/server/index.mjs \
+              --name "$PM2_APP" \
+              --interpreter node \
+              -- --port 3000
+
+            echo ">>> Saving PM2 process list..."
+            pm2 save
+
+            echo ">>> Reloading Nginx..."
+            sudo nginx -s reload
+
+            echo ">>> Nuxt deployment complete."
+
+      - name: Nuxt health check
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://${{ secrets.VPS_HOST }})
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+
+  # ────────────────────────────────────────────
+  # JOB 3: Notify
+  # ────────────────────────────────────────────
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [deploy-laravel, deploy-nuxt]
+    if: always()
+
+    steps:
+      - name: Send Slack notification
+        if: ${{ secrets.SLACK_WEBHOOK != '' }}
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "${{ needs.deploy-laravel.result == 'success' && needs.deploy-nuxt.result == 'success' && '✅' || '❌' }} *[${{ github.ref_name }}]* Deployment ${{ needs.deploy-laravel.result == 'success' && needs.deploy-nuxt.result == 'success' && 'succeeded' || 'failed' }} — <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
