@@ -115,7 +115,7 @@ class ModulesSeeder extends Seeder
                         'sort_order' => 4,
                     ],
                     [
-                        'name' => 'Delivery zones',
+                        'name' => 'Coverage areas',
                         'icon' => 'lucide:map-pinned',
                         'url' => '/admin/delivery-zones',
                         'default_permission' => 'can.access.delivery-zones',
@@ -201,6 +201,11 @@ class ModulesSeeder extends Seeder
         }
 
         $adminRole->givePermissionTo($grant);
+
+        // Idempotent rename: bring already-seeded submodules in line with the
+        // current array values without resetting other admin customisations.
+        Submodule::where('default_permission', 'can.access.delivery-zones')
+            ->update(['name' => 'Coverage areas']);
     }
 
     private function ensurePermission(string $name): Permission

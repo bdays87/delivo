@@ -110,6 +110,21 @@
                    :class="['input input-bordered w-full', errors.support_phone ? 'input-error' : '']" />
             <span v-if="errors.support_phone" class="text-xs text-red-600">{{ errors.support_phone }}</span>
           </label>
+          <label class="fieldset">
+            <span class="fieldset-legend">Operating city *</span>
+            <select v-model="form.city"
+                    :class="['select select-bordered w-full', errors.city ? 'select-error' : '']">
+              <option value="" disabled>Select your city…</option>
+              <option v-for="a in coverage.areas" :key="a.id" :value="a.city">{{ a.city }}</option>
+            </select>
+            <span class="text-xs opacity-60">
+              Delivo only accepts vendors from cities we currently deliver to.
+            </span>
+            <span v-if="!coverage.areas.length && !coverage.loading" class="text-xs text-red-600">
+              No coverage areas configured yet. Ask an admin to add cities.
+            </span>
+            <span v-if="errors.city" class="text-xs text-red-600">{{ errors.city }}</span>
+          </label>
         </div>
       </section>
 
@@ -219,6 +234,7 @@ useHead({ title: 'Become a seller — Delivo' });
 
 const vendorStore = useVendorStore();
 const walletStore = useMobileWalletStore();
+const coverage = useCoverageStore();
 
 type PayoutMethod = 'MOBILE_WALLET' | 'BANK_TRANSFER' | null;
 
@@ -227,6 +243,7 @@ const form = reactive({
   slug: '',
   support_email: '',
   support_phone: '',
+  city: '',
   tin: '' as string | null,
   registration_no: '' as string | null,
   payout_method: null as PayoutMethod,
@@ -247,6 +264,7 @@ const fileInput = ref<HTMLInputElement | null>(null);
 onMounted(() => {
   vendorStore.fetchCurrent();
   walletStore.fetchActive();
+  coverage.ensureLoaded();
 });
 
 const prevBusinessName = ref('');

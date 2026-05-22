@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Admin\AdminProductController;
 use App\Http\Controllers\Api\Admin\AdminVendorController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CoverageAreaController;
 use App\Http\Controllers\Api\Customer\AddressController;
 use App\Http\Controllers\Api\Customer\CartController;
 use App\Http\Controllers\Api\Customer\CheckoutController;
@@ -22,9 +23,6 @@ use App\Http\Controllers\Api\Vendor\VendorProductController;
 use App\Http\Controllers\Api\VendorPublicController;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Route;
-
-
-
 
 Route::prefix('v1')->group(function () {
     Route::get('ping', fn () => ApiResponse::success(['pong' => true], 'Delivo API is up.'))
@@ -44,6 +42,11 @@ Route::prefix('v1')->group(function () {
     // Public vendor directory ("Shop by store")
     Route::get('vendors/list', [VendorPublicController::class, 'listActive'])
         ->name('v1.vendors.list');
+
+    // Public coverage areas — the strict list of cities Delivo delivers to.
+    // Used by vendor apply + checkout address forms to constrain choices.
+    Route::get('coverage-areas/list', [CoverageAreaController::class, 'listActive'])
+        ->name('v1.coverage-areas.list');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('v1.auth.logout');

@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Vendor;
 
+use App\Models\DeliveryZone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class VendorApplyRequest extends FormRequest
 {
@@ -49,6 +51,12 @@ class VendorApplyRequest extends FormRequest
             'slug' => ['required', 'string', 'max:160', 'regex:/^[a-z0-9-]+$/', 'unique:vendors,slug'],
             'support_email' => ['required', 'email:rfc', 'max:255'],
             'support_phone' => ['required', 'string', 'regex:/^\+2637\d{8}$/'],
+            'city' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::exists('delivery_zones', 'city')->where('status', DeliveryZone::STATUS_ACTIVE),
+            ],
             'tin' => ['nullable', 'string', 'max:64'],
             'registration_no' => ['nullable', 'string', 'max:64'],
         ];
@@ -59,6 +67,7 @@ class VendorApplyRequest extends FormRequest
         return [
             'slug.regex' => 'Slug may only contain lowercase letters, numbers, and hyphens.',
             'support_phone.regex' => 'Support phone must be a Zimbabwean mobile number, e.g. 0772 000 000.',
+            'city.exists' => "Delivo doesn't yet deliver to this city. Pick one of the listed coverage areas.",
         ];
     }
 }

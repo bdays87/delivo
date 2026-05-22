@@ -16,7 +16,6 @@ class AdminPlatformSettingsRequest extends FormRequest
         return [
             'service_charge_pct' => ['required', 'numeric', 'min:0', 'max:100'],
             'service_charge_min_usd' => ['required', 'numeric', 'min:0', 'max:9999.99'],
-            'default_delivery_fee_usd' => ['required', 'numeric', 'min:0', 'max:9999.99'],
         ];
     }
 }

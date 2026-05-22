@@ -16,7 +16,6 @@ class DeliveryZonesSeeder extends Seeder
         PlatformSettings::query()->firstOrCreate([], [
             'service_charge_pct' => 2.50,
             'service_charge_min_usd' => 0.50,
-            'default_delivery_fee_usd' => 10.00,
         ]);
 
         $zones = [

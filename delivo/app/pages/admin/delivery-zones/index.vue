@@ -2,14 +2,14 @@
   <div>
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 class="text-2xl font-extrabold tracking-tight">Delivery zones</h1>
+        <h1 class="text-2xl font-extrabold tracking-tight">Coverage areas</h1>
         <p class="mt-1 text-sm opacity-70">
-          Per-city delivery fees. Unknown cities fall back to the platform default in
-          <NuxtLink to="/admin/settings" class="link link-primary">Platform settings</NuxtLink>.
+          Cities Delivo operates in, with the per-city delivery fee. Vendors and customers can only
+          register or check out in cities listed here.
         </p>
       </div>
       <button class="btn btn-primary rounded-full" @click="openCreate">
-        <Icon name="lucide:plus" class="h-4 w-4" /> New zone
+        <Icon name="lucide:plus" class="h-4 w-4" /> New city
       </button>
     </div>
 
@@ -62,7 +62,7 @@
 
     <dialog :open="modalOpen" class="modal" :class="{ 'modal-open': modalOpen }">
       <div class="modal-box max-w-md">
-        <h3 class="text-lg font-bold">{{ editingId ? 'Edit zone' : 'New zone' }}</h3>
+        <h3 class="text-lg font-bold">{{ editingId ? 'Edit coverage city' : 'New coverage city' }}</h3>
 
         <form class="mt-4 flex flex-col gap-3" @submit.prevent="onSubmit">
           <label class="fieldset">
@@ -119,7 +119,7 @@ definePageMeta({
   layout: 'admin',
   middleware: ['auth', 'admin'],
 });
-useHead({ title: 'Delivery zones — Delivo Admin' });
+useHead({ title: 'Coverage areas — Delivo Admin' });
 
 interface Zone {
   id: number;
@@ -221,7 +221,7 @@ const onSubmit = async () => {
 };
 
 const confirmArchive = async (id: number) => {
-  if (!window.confirm('Archive this delivery zone? Cities will fall back to the platform default fee.')) return;
+  if (!window.confirm('Archive this city? Vendors and customers will no longer be able to register or check out there.')) return;
   const { status } = await archiveZone(id);
   if (status?.value) {
     toast.success({ title: 'Archived', message: '', position: 'topRight', layout: 2 });

@@ -25,6 +25,7 @@ class Vendor extends Model
         'slug',
         'support_email',
         'support_phone',
+        'city',
         'tin',
         'registration_no',
         'commission_pct_override',

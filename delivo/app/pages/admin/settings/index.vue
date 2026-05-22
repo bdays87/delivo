@@ -11,7 +11,7 @@
       <span class="loading loading-spinner loading-lg"></span>
     </div>
 
-    <form v-else class="mt-6 grid gap-6 lg:grid-cols-2" @submit.prevent="onSave">
+    <form v-else class="mt-6 grid gap-6" @submit.prevent="onSave">
       <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
         <h2 class="text-lg font-bold">Service charge</h2>
         <p class="mt-1 text-sm opacity-70">
@@ -45,25 +45,18 @@
         </p>
       </section>
 
-      <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
-        <h2 class="text-lg font-bold">Default delivery fee</h2>
-        <p class="mt-1 text-sm opacity-70">
-          Charged when the delivery city isn't in the
-          <NuxtLink to="/admin/delivery-zones" class="link link-primary">delivery zones table</NuxtLink>.
-        </p>
-        <label class="fieldset mt-4">
-          <span class="fieldset-legend">Fee (USD)</span>
-          <input
-            v-model.number="form.default_delivery_fee_usd"
-            type="number"
-            step="0.01"
-            min="0"
-            class="input input-bordered w-48"
-          />
-        </label>
+      <section class="rounded-3xl border border-base-300 bg-base-200/40 p-5 text-sm">
+        <div class="flex items-start gap-3">
+          <Icon name="lucide:info" class="h-5 w-5 text-info" />
+          <p class="opacity-80">
+            Delivery fees are managed per-city in
+            <NuxtLink to="/admin/delivery-zones" class="link link-primary">Coverage areas</NuxtLink>.
+            Delivo only accepts vendors and orders in covered cities.
+          </p>
+        </div>
       </section>
 
-      <div class="lg:col-span-2 flex justify-end">
+      <div class="flex justify-end">
         <button type="submit" class="btn btn-primary rounded-full" :disabled="submitting">
           <span v-if="submitting" class="loading loading-spinner loading-xs"></span>
           Save changes
@@ -83,7 +76,6 @@ useHead({ title: 'Platform settings — Delivo Admin' });
 interface SettingsForm {
   service_charge_pct: number;
   service_charge_min_usd: number;
-  default_delivery_fee_usd: number;
 }
 
 const { getSettings, updateSettings } = useAdminPlatformSettingsHelper();
@@ -94,7 +86,6 @@ const submitting = ref(false);
 const form = reactive<SettingsForm>({
   service_charge_pct: 2.5,
   service_charge_min_usd: 0.5,
-  default_delivery_fee_usd: 10,
 });
 
 onMounted(async () => {
@@ -105,7 +96,6 @@ onMounted(async () => {
     if (s) {
       form.service_charge_pct = Number(s.service_charge_pct);
       form.service_charge_min_usd = Number(s.service_charge_min_usd);
-      form.default_delivery_fee_usd = Number(s.default_delivery_fee_usd);
     }
   }
   loading.value = false;

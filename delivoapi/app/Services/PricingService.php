@@ -34,23 +34,21 @@ class PricingService
     }
 
     /**
-     * Resolve the delivery fee for a delivery city. Returns the per-zone fee
-     * if the city matches an active zone, otherwise the platform default.
-     * Second element is a label like "Harare" or "Default zone" for UI.
+     * Strict coverage: resolves the delivery fee for a city. Returns null
+     * when the city isn't in the active coverage list — callers translate
+     * that into a 422 "we don't deliver to {city} yet".
      *
-     * @return array{0:float,1:string}
+     * @return array{0:?float,1:?string} [fee_usd, zone_label]
      */
     public function deliveryFeeFor(?string $city): array
     {
-        $default = (float) $this->settings->current()->default_delivery_fee_usd;
-
         if ($city === null || trim($city) === '') {
-            return [$default, 'Default zone'];
+            return [null, null];
         }
 
         $zone = $this->zones->findByCity($city);
         if ($zone === null) {
-            return [$default, 'Default zone'];
+            return [null, null];
         }
 
         return [(float) $zone->fee_usd, $zone->city];
@@ -63,8 +61,10 @@ class PricingService
 
     /**
      * Compute the full breakdown for a cart and (optionally) a delivery
-     * address. When no address is supplied, shipping comes back as null so
-     * the UI can render "calculated at checkout".
+     * address. When no address is supplied OR the address city isn't in
+     * the active coverage list, shipping comes back as null and the caller
+     * decides whether to render "calculated at checkout" or a coverage
+     * error.
      */
     public function quote(float $subtotalUsd, ?Address $address): array
     {
@@ -76,6 +76,7 @@ class PricingService
                 'service_charge_usd' => $service,
                 'shipping_usd' => null,
                 'shipping_zone' => null,
+                'is_covered' => null,
                 'items_total_usd' => round($subtotalUsd + $service, 2),
                 'total_usd' => null,
             ];
@@ -83,11 +84,24 @@ class PricingService
 
         [$shipping, $zoneLabel] = $this->deliveryFeeForAddress($address);
 
+        if ($shipping === null) {
+            return [
+                'subtotal_usd' => $subtotalUsd,
+                'service_charge_usd' => $service,
+                'shipping_usd' => null,
+                'shipping_zone' => null,
+                'is_covered' => false,
+                'items_total_usd' => round($subtotalUsd + $service, 2),
+                'total_usd' => null,
+            ];
+        }
+
         return [
             'subtotal_usd' => $subtotalUsd,
             'service_charge_usd' => $service,
             'shipping_usd' => $shipping,
             'shipping_zone' => $zoneLabel,
+            'is_covered' => true,
             'items_total_usd' => round($subtotalUsd + $service, 2),
             'total_usd' => round($subtotalUsd + $service + $shipping, 2),
         ];

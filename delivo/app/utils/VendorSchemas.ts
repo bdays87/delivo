@@ -21,6 +21,10 @@ export const VendorApplySchema = yup.object({
     .string()
     .required('Support phone is required')
     .matches(zwPhoneRegex, 'Enter a Zimbabwean mobile number, e.g. 0772 000 000'),
+  city: yup
+    .string()
+    .required('Pick the city your business operates in')
+    .max(120),
   tin: yup.string().max(64).nullable(),
   registration_no: yup.string().max(64).nullable(),
 

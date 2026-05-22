@@ -69,7 +69,13 @@
             </label>
             <label class="fieldset">
               <span class="fieldset-legend">City</span>
-              <input v-model="form.city" type="text" placeholder="Harare" class="input input-bordered" required />
+              <select v-model="form.city" class="select select-bordered" required>
+                <option value="" disabled>Pick a covered city…</option>
+                <option v-for="a in coverage.areas" :key="a.id" :value="a.city">{{ a.city }}</option>
+              </select>
+              <span class="text-xs opacity-60">
+                Delivo only delivers to listed cities — pick one to continue.
+              </span>
             </label>
             <label class="fieldset">
               <span class="fieldset-legend">Suburb</span>
@@ -147,6 +153,7 @@
             <dd>
               <span v-if="quoteLoading" class="loading loading-spinner loading-xs"></span>
               <span v-else-if="quote && quote.shipping_usd !== null">{{ currency.format(quote.shipping_usd) }}</span>
+              <span v-else-if="quote?.is_covered === false" class="text-xs text-error">Not covered</span>
               <span v-else class="text-xs opacity-60">Choose address</span>
             </dd>
           </div>
@@ -159,6 +166,13 @@
           </span>
         </div>
 
+        <div
+          v-if="quote?.is_covered === false"
+          class="mt-4 rounded-2xl border border-error/40 bg-error/5 p-3 text-xs text-error"
+        >
+          We don't yet deliver to this address's city. Choose a different address — or
+          <NuxtLink to="/cart" class="link">go back to your cart</NuxtLink> while we expand.
+        </div>
         <button
           class="btn btn-primary btn-lg mt-4 w-full rounded-full"
           :disabled="!canPlace || placing"
@@ -189,6 +203,7 @@ interface Quote {
   service_charge_usd: number;
   shipping_usd: number | null;
   shipping_zone: string | null;
+  is_covered: boolean | null;
   items_total_usd: number;
   total_usd: number | null;
 }
@@ -196,6 +211,7 @@ interface Quote {
 const cart = useCartStore();
 const address = useAddressStore();
 const currency = useCurrencyStore();
+const coverage = useCoverageStore();
 const { quoteOrder, placeOrder } = useCheckoutHelper();
 const router = useRouter();
 const toast = useToast();
@@ -224,7 +240,7 @@ const form = reactive(blankForm());
 
 onMounted(async () => {
   loading.value = true;
-  await Promise.all([cart.refresh(true), address.fetchAll(), fetchWallets()]);
+  await Promise.all([cart.refresh(true), address.fetchAll(), fetchWallets(), coverage.ensureLoaded()]);
   selectedAddressId.value = address.defaultAddress?.id ?? null;
   if (!address.addresses.length) showAddForm.value = true;
   loading.value = false;
@@ -247,6 +263,7 @@ const refreshQuote = async () => {
       service_charge_usd: Number(payload.service_charge_usd),
       shipping_usd: payload.shipping_usd !== null ? Number(payload.shipping_usd) : null,
       shipping_zone: payload.shipping_zone,
+      is_covered: payload.is_covered,
       items_total_usd: Number(payload.items_total_usd),
       total_usd: payload.total_usd !== null ? Number(payload.total_usd) : null,
     } : null;
@@ -267,7 +284,8 @@ const fetchWallets = async () => {
 const canPlace = computed(() =>
   !!selectedAddressId.value && !!selectedWalletId.value
   && cart.cart.items.length > 0
-  && !cart.cart.items.some((l) => l.stock_warning),
+  && !cart.cart.items.some((l) => l.stock_warning)
+  && quote.value?.is_covered === true,
 );
 
 const saveNewAddress = async () => {

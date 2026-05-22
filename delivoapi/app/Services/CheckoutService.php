@@ -126,14 +126,22 @@ class CheckoutService
             ];
         }
 
-        return DB::transaction(function () use ($user, $address, $wallet, $lines) {
+        // Strict coverage check before mutating anything.
+        [$resolvedShipping] = $this->pricing->deliveryFeeForAddress($address);
+        if ($resolvedShipping === null) {
+            return [
+                'error' => "We don't yet deliver to {$address->city}. Pick an address in a covered city.",
+                'code' => 422,
+            ];
+        }
+
+        return DB::transaction(function () use ($user, $address, $wallet, $lines, $resolvedShipping) {
             $subtotal = round(array_sum(array_column($lines, 'line_total')), 2);
 
             // Fees are recomputed server-side at place-time; client breakdown is
             // for display only.
             $serviceCharge = round($this->pricing->serviceChargeFor($subtotal), 2);
-            [$shipping] = $this->pricing->deliveryFeeForAddress($address);
-            $shipping = round((float) $shipping, 2);
+            $shipping = round((float) $resolvedShipping, 2);
 
             $total = round($subtotal + $serviceCharge + $shipping, 2);
 
