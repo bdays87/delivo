@@ -101,10 +101,13 @@ jobs:
 
             cd "$APP_DIR"
 
-            echo ">>> Syncing to origin/${{ github.ref_name }}..."
-            git fetch origin ${{ github.ref_name }}
-            git checkout ${{ github.ref_name }}
-            git reset --hard origin/${{ github.ref_name }}
+            BRANCH="${{ github.ref_name }}"
+            echo ">>> Syncing to origin/$BRANCH..."
+            git remote prune origin || true
+            # Fetch into local branch directly (avoids stale refs/remotes/origin/* lock errors)
+            git fetch --force origin "refs/heads/$BRANCH:refs/heads/$BRANCH"
+            git checkout "$BRANCH"
+            git reset --hard "HEAD"
 
             echo ">>> Installing Composer dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction
@@ -174,10 +177,12 @@ jobs:
 
             cd "$APP_DIR"
 
-            echo ">>> Syncing to origin/${{ github.ref_name }}..."
-            git fetch origin ${{ github.ref_name }}
-            git checkout ${{ github.ref_name }}
-            git reset --hard origin/${{ github.ref_name }}
+            BRANCH="${{ github.ref_name }}"
+            echo ">>> Syncing to origin/$BRANCH..."
+            git remote prune origin || true
+            git fetch --force origin "refs/heads/$BRANCH:refs/heads/$BRANCH"
+            git checkout "$BRANCH"
+            git reset --hard "HEAD"
 
             echo ">>> Installing Node dependencies..."
             npm ci
