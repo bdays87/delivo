@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AdminCategoryController;
+use App\Http\Controllers\Api\Admin\AdminDeliveryFeeController;
+use App\Http\Controllers\Api\Admin\AdminDeliveryProviderController;
 use App\Http\Controllers\Api\Admin\AdminDeliveryZoneController;
 use App\Http\Controllers\Api\Admin\AdminExchangeRateController;
 use App\Http\Controllers\Api\Admin\AdminMobileWalletController;
@@ -18,6 +20,7 @@ use App\Http\Controllers\Api\Customer\CheckoutController;
 use App\Http\Controllers\Api\Customer\OrderController;
 use App\Http\Controllers\Api\MobileWalletController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\Provider\ProviderController;
 use App\Http\Controllers\Api\Vendor\VendorController;
 use App\Http\Controllers\Api\Vendor\VendorDashboardController;
 use App\Http\Controllers\Api\Vendor\VendorPayoutAccountController;
@@ -84,6 +87,12 @@ Route::prefix('v1')->group(function () {
         Route::get('orders/{orderNumber}', [OrderController::class, 'show'])
             ->where('orderNumber', '[A-Z0-9-]+')->name('v1.orders.show');
 
+        // Delivery provider self-service (apply, KYC, coverage selection)
+        Route::post('provider/apply', [ProviderController::class, 'apply'])->name('v1.provider.apply');
+        Route::get('provider/me', [ProviderController::class, 'currentProvider'])->name('v1.provider.me');
+        Route::post('provider/me/kyc-documents', [ProviderController::class, 'uploadKyc'])->name('v1.provider.kyc.upload');
+        Route::post('provider/me/coverage', [ProviderController::class, 'syncCoverage'])->name('v1.provider.coverage.sync');
+
         Route::post('vendor/apply', [VendorController::class, 'apply'])->name('v1.vendor.apply');
         Route::get('vendor/me', [VendorController::class, 'currentVendor'])->name('v1.vendor.me');
         Route::get('vendor/me/dashboard', [VendorDashboardController::class, 'show'])->name('v1.vendor.dashboard');
@@ -129,6 +138,21 @@ Route::prefix('v1')->group(function () {
             Route::get('vendors/{vendor}/kyc-documents/{document}', [AdminVendorController::class, 'downloadKyc'])
                 ->whereNumber(['vendor', 'document'])
                 ->name('v1.admin.vendors.kyc.download');
+
+            // Delivery provider moderation
+            Route::get('delivery-providers', [AdminDeliveryProviderController::class, 'index'])
+                ->name('v1.admin.delivery-providers.index');
+            Route::get('delivery-providers/{id}', [AdminDeliveryProviderController::class, 'show'])
+                ->whereNumber('id')->name('v1.admin.delivery-providers.show');
+            Route::post('delivery-providers/{id}/approve', [AdminDeliveryProviderController::class, 'approve'])
+                ->whereNumber('id')->name('v1.admin.delivery-providers.approve');
+            Route::post('delivery-providers/{id}/reject', [AdminDeliveryProviderController::class, 'reject'])
+                ->whereNumber('id')->name('v1.admin.delivery-providers.reject');
+            Route::post('delivery-providers/{id}/suspend', [AdminDeliveryProviderController::class, 'suspend'])
+                ->whereNumber('id')->name('v1.admin.delivery-providers.suspend');
+            Route::get('delivery-providers/{provider}/kyc-documents/{document}', [AdminDeliveryProviderController::class, 'downloadKyc'])
+                ->whereNumber(['provider', 'document'])
+                ->name('v1.admin.delivery-providers.kyc.download');
 
             // Mobile wallet reference data
             Route::get('mobile-wallets', [AdminMobileWalletController::class, 'index'])->name('v1.admin.mobile-wallets.index');
@@ -177,6 +201,18 @@ Route::prefix('v1')->group(function () {
                 ->whereNumber('id')->name('v1.admin.delivery-zones.update');
             Route::delete('delivery-zones/{id}', [AdminDeliveryZoneController::class, 'destroy'])
                 ->whereNumber('id')->name('v1.admin.delivery-zones.destroy');
+
+            // Distance-based delivery fee bands.
+            Route::get('delivery-fees', [AdminDeliveryFeeController::class, 'index'])
+                ->name('v1.admin.delivery-fees.index');
+            Route::post('delivery-fees', [AdminDeliveryFeeController::class, 'store'])
+                ->name('v1.admin.delivery-fees.store');
+            Route::get('delivery-fees/{id}', [AdminDeliveryFeeController::class, 'show'])
+                ->whereNumber('id')->name('v1.admin.delivery-fees.show');
+            Route::put('delivery-fees/{id}', [AdminDeliveryFeeController::class, 'update'])
+                ->whereNumber('id')->name('v1.admin.delivery-fees.update');
+            Route::delete('delivery-fees/{id}', [AdminDeliveryFeeController::class, 'destroy'])
+                ->whereNumber('id')->name('v1.admin.delivery-fees.destroy');
 
             // System modules tree (read-only). Modules + submodules + permissions
             // are seeder-managed. The submodule-permissions endpoint self-heals

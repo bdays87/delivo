@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'google_maps' => [
+        'api_key' => env('GOOGLE_MAPS_API_KEY'),
+        // Distance Matrix results are cached this long (seconds). Default
+        // 30 days — distances change rarely.
+        'distance_cache_ttl' => env('GOOGLE_MAPS_DISTANCE_CACHE_TTL', 60 * 60 * 24 * 30),
+    ],
+
 ];

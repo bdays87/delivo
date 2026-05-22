@@ -8,6 +8,7 @@ use App\Interfaces\Repositories\IExchangeRateInterface;
 use App\Interfaces\Repositories\IOrderInterface;
 use App\Models\MobileWallet;
 use App\Models\Order;
+use App\Models\OrderDeliveryShipment;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -25,9 +26,8 @@ class CheckoutService
     ) {}
 
     /**
-     * Return a live breakdown for the user's cart against a chosen delivery
-     * address. The address must belong to the user. Stock is NOT validated
-     * here — that's place-order's job.
+     * Live breakdown for the user's cart against a chosen delivery address.
+     * Stock is NOT validated here — that's place-order's job.
      */
     public function quote(User $user, int $addressId): array
     {
@@ -51,13 +51,12 @@ class CheckoutService
         }
         $subtotal = round($subtotal, 2);
 
-        return ['quote' => $this->pricing->quote($subtotal, $address)];
+        return ['quote' => $this->pricing->quote($cart, $subtotal, $address)];
     }
 
     /**
-     * Place an order from the user's cart. Hard-blocks on stock-out (returns
-     * an error payload with the offending lines) and returns the created order
-     * with its snapshotted items.
+     * Place an order from the user's cart. Hard-blocks on stock-out OR on any
+     * uncovered shipment (vendor city has no hub, no route, no fee band).
      */
     public function place(User $user, int $addressId, int $mobileWalletId): array
     {
@@ -126,23 +125,35 @@ class CheckoutService
             ];
         }
 
-        // Strict coverage check before mutating anything.
-        [$resolvedShipping] = $this->pricing->deliveryFeeForAddress($address);
-        if ($resolvedShipping === null) {
+        // Coverage + per-vendor shipment fees. Recomputed server-side at
+        // place-time; the client breakdown is for display only.
+        $shipmentResult = $this->pricing->shipmentsForCart($cart, $address);
+        if (! $shipmentResult['all_covered']) {
+            $uncovered = collect($shipmentResult['shipments'])
+                ->where('is_covered', false)
+                ->pluck('reason')
+                ->filter()
+                ->unique()
+                ->implode(' · ');
+
             return [
-                'error' => "We don't yet deliver to {$address->city}. Pick an address in a covered city.",
+                'error' => $uncovered !== ''
+                    ? $uncovered
+                    : 'We cannot deliver some items to this address.',
                 'code' => 422,
+                'shipments' => $shipmentResult['shipments'],
             ];
         }
 
-        return DB::transaction(function () use ($user, $address, $wallet, $lines, $resolvedShipping) {
+        $shipments = $shipmentResult['shipments'];
+
+        return DB::transaction(function () use ($user, $address, $wallet, $lines, $shipments) {
             $subtotal = round(array_sum(array_column($lines, 'line_total')), 2);
-
-            // Fees are recomputed server-side at place-time; client breakdown is
-            // for display only.
             $serviceCharge = round($this->pricing->serviceChargeFor($subtotal), 2);
-            $shipping = round((float) $resolvedShipping, 2);
-
+            $shipping = round(
+                array_sum(array_map(fn ($s) => (float) ($s['fee_usd'] ?? 0), $shipments)),
+                2,
+            );
             $total = round($subtotal + $serviceCharge + $shipping, 2);
 
             $year = (int) date('Y');
@@ -184,14 +195,28 @@ class CheckoutService
                     'line_total_usd_snapshot' => $line['line_total'],
                 ]);
 
-                // Decrement variant stock.
                 $line['variant']->decrement('stock_quantity', (int) $line['item']->quantity);
 
                 $line['item']->delete();
             }
 
+            // Snapshot per-vendor shipments so admins and customers can audit
+            // each leg even if hub/band data drifts later.
+            foreach ($shipments as $s) {
+                OrderDeliveryShipment::query()->create([
+                    'order_id' => $order->id,
+                    'vendor_id' => $s['vendor_id'],
+                    'hub_id' => $s['hub']['id'] ?? null,
+                    'hub_name_snapshot' => $s['hub']['name'] ?? null,
+                    'hub_address_snapshot' => $s['hub']['address'] ?? null,
+                    'distance_km' => $s['distance_km'],
+                    'fee_usd' => $s['fee_usd'],
+                    'delivery_fee_id' => $s['band_id'],
+                ]);
+            }
+
             return [
-                'order' => $order->load(['items', 'mobileWallet:id,name,code']),
+                'order' => $order->load(['items', 'shipments', 'mobileWallet:id,name,code']),
             ];
         });
     }

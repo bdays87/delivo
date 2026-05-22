@@ -19,7 +19,7 @@ class AdminRoleController extends Controller
      * them remain editable (use with care; the admin role grants access to
      * this very page).
      */
-    private const PROTECTED_ROLES = ['admin', 'vendor', 'customer'];
+    private const PROTECTED_ROLES = ['admin', 'vendor', 'customer', 'delivery_provider'];
 
     public function index(): JsonResponse
     {

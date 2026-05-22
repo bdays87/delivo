@@ -54,13 +54,12 @@
       </div>
 
       <div>
-        <div class="mb-4 text-sm font-semibold opacity-60">Sell on Delivo</div>
+        <div class="mb-4 text-sm font-semibold opacity-60">Partner with Delivo</div>
         <ul class="space-y-2 text-sm">
-          <li><a class="opacity-80 hover:opacity-100">Become a seller</a></li>
-          <li><a class="opacity-80 hover:opacity-100">Seller dashboard</a></li>
-          <li><a class="opacity-80 hover:opacity-100">Fees & pricing</a></li>
-          <li><a class="opacity-80 hover:opacity-100">Logistics</a></li>
-          <li><a class="opacity-80 hover:opacity-100">Help centre</a></li>
+          <li><NuxtLink to="/vendor/apply" class="opacity-80 hover:opacity-100">Sell on Delivo</NuxtLink></li>
+          <li><NuxtLink to="/providers/apply" class="opacity-80 hover:opacity-100">Drive for Delivo</NuxtLink></li>
+          <li><NuxtLink to="/about/sellers" class="opacity-80 hover:opacity-100">How selling works</NuxtLink></li>
+          <li><NuxtLink to="/about/shoppers" class="opacity-80 hover:opacity-100">How shopping works</NuxtLink></li>
         </ul>
       </div>
     </div>

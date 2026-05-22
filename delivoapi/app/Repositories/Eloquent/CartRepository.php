@@ -23,7 +23,7 @@ class CartRepository extends BaseRepository implements ICartInterface
         return $cart->load([
             'items.variant',
             'items.product:id,vendor_id,name,slug,status,category_id',
-            'items.product.vendor:id,business_name,slug',
+            'items.product.vendor:id,business_name,slug,city',
             'items.product.priceTiers',
             'items.product.images',
         ]);

@@ -146,16 +146,29 @@
             <dd>{{ currency.format(cart.serviceChargeUsd) }}</dd>
           </div>
           <div class="flex justify-between">
-            <dt>
-              Delivery
-              <span v-if="quote?.shipping_zone" class="ml-1 text-xs opacity-60">({{ quote.shipping_zone }})</span>
-            </dt>
+            <dt>Delivery</dt>
             <dd>
               <span v-if="quoteLoading" class="loading loading-spinner loading-xs"></span>
               <span v-else-if="quote && quote.shipping_usd !== null">{{ currency.format(quote.shipping_usd) }}</span>
               <span v-else-if="quote?.is_covered === false" class="text-xs text-error">Not covered</span>
               <span v-else class="text-xs opacity-60">Choose address</span>
             </dd>
+          </div>
+          <div v-if="quote?.shipments?.length" class="mt-2 space-y-1 rounded-2xl bg-base-200/40 px-3 py-2 text-xs opacity-80">
+            <div v-for="s in quote.shipments" :key="s.vendor_id" class="flex items-baseline justify-between gap-3">
+              <div class="min-w-0">
+                <div class="truncate font-medium">{{ s.vendor_name }}</div>
+                <div v-if="s.hub" class="truncate opacity-70">
+                  from {{ s.hub.name ?? s.hub.city }}
+                  <span v-if="s.distance_km !== null">· {{ s.distance_km }} km</span>
+                </div>
+                <div v-else-if="s.reason" class="text-error">{{ s.reason }}</div>
+              </div>
+              <div class="shrink-0 font-semibold">
+                <span v-if="s.fee_usd !== null">{{ currency.format(s.fee_usd) }}</span>
+                <span v-else class="text-error">—</span>
+              </div>
+            </div>
           </div>
         </dl>
         <div class="mt-4 flex items-baseline justify-between border-t border-base-300 pt-4">
@@ -198,14 +211,26 @@ useHead({ title: 'Checkout — Delivo' });
 
 interface MobileWallet { id: number; code: string; name: string; }
 
+interface ShipmentRow {
+  vendor_id: number;
+  vendor_name: string;
+  vendor_city: string;
+  hub: { id: number; city: string; name: string | null; address: string | null } | null;
+  distance_km: number | null;
+  fee_usd: number | null;
+  band_id: number | null;
+  is_covered: boolean | null;
+  reason: string | null;
+}
+
 interface Quote {
   subtotal_usd: number;
   service_charge_usd: number;
   shipping_usd: number | null;
-  shipping_zone: string | null;
   is_covered: boolean | null;
   items_total_usd: number;
   total_usd: number | null;
+  shipments: ShipmentRow[];
 }
 
 const cart = useCartStore();
@@ -262,10 +287,10 @@ const refreshQuote = async () => {
       subtotal_usd: Number(payload.subtotal_usd),
       service_charge_usd: Number(payload.service_charge_usd),
       shipping_usd: payload.shipping_usd !== null ? Number(payload.shipping_usd) : null,
-      shipping_zone: payload.shipping_zone,
       is_covered: payload.is_covered,
       items_total_usd: Number(payload.items_total_usd),
       total_usd: payload.total_usd !== null ? Number(payload.total_usd) : null,
+      shipments: payload.shipments ?? [],
     } : null;
   }
   quoteLoading.value = false;

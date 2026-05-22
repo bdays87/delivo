@@ -25,7 +25,10 @@ class AdminDeliveryZoneRequest extends FormRequest
                 'max:120',
                 'unique:delivery_zones,city'.($id ? ",{$id}" : ''),
             ],
-            'fee_usd' => [$isUpdate ? 'sometimes' : 'required', 'numeric', 'min:0', 'max:9999.99'],
+            'hub_name' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:150'],
+            'hub_address' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
+            'hub_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'hub_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:1000'],
             'status' => [
                 'sometimes',

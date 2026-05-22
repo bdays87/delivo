@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Interfaces\Repositories\IAddressInterface;
 use App\Interfaces\Repositories\ICartInterface;
 use App\Interfaces\Repositories\ICategoryInterface;
+use App\Interfaces\Repositories\IDeliveryFeeInterface;
+use App\Interfaces\Repositories\IDeliveryProviderInterface;
+use App\Interfaces\Repositories\IDeliveryProviderKycInterface;
 use App\Interfaces\Repositories\IDeliveryZoneInterface;
 use App\Interfaces\Repositories\IExchangeRateInterface;
 use App\Interfaces\Repositories\IMobileWalletInterface;
@@ -22,6 +25,9 @@ use App\Interfaces\Repositories\IVendorPayoutAccountInterface;
 use App\Repositories\Eloquent\AddressRepository;
 use App\Repositories\Eloquent\CartRepository;
 use App\Repositories\Eloquent\CategoryRepository;
+use App\Repositories\Eloquent\DeliveryFeeRepository;
+use App\Repositories\Eloquent\DeliveryProviderKycRepository;
+use App\Repositories\Eloquent\DeliveryProviderRepository;
 use App\Repositories\Eloquent\DeliveryZoneRepository;
 use App\Repositories\Eloquent\ExchangeRateRepository;
 use App\Repositories\Eloquent\MobileWalletRepository;
@@ -65,5 +71,8 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(IOrderInterface::class, OrderRepository::class);
         $this->app->bind(IPlatformSettingsInterface::class, PlatformSettingsRepository::class);
         $this->app->bind(IDeliveryZoneInterface::class, DeliveryZoneRepository::class);
+        $this->app->bind(IDeliveryFeeInterface::class, DeliveryFeeRepository::class);
+        $this->app->bind(IDeliveryProviderInterface::class, DeliveryProviderRepository::class);
+        $this->app->bind(IDeliveryProviderKycInterface::class, DeliveryProviderKycRepository::class);
     }
 }

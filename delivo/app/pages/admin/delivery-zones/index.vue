@@ -22,7 +22,8 @@
         <thead class="bg-base-200/50 text-xs uppercase tracking-wider opacity-70">
           <tr>
             <th>City</th>
-            <th>Fee (USD)</th>
+            <th>Hub</th>
+            <th>Coords</th>
             <th>Order</th>
             <th>Status</th>
             <th class="text-right">Actions</th>
@@ -30,11 +31,20 @@
         </thead>
         <tbody>
           <tr v-if="!zones.length">
-            <td colspan="5" class="py-10 text-center text-base-content/60">No zones yet.</td>
+            <td colspan="6" class="py-10 text-center text-base-content/60">No cities yet.</td>
           </tr>
           <tr v-for="z in zones" :key="z.id">
             <td class="font-semibold">{{ z.city }}</td>
-            <td>${{ Number(z.fee_usd).toFixed(2) }}</td>
+            <td>
+              <div class="font-medium">{{ z.hub_name || '—' }}</div>
+              <div v-if="z.hub_address" class="text-xs opacity-60">{{ z.hub_address }}</div>
+            </td>
+            <td class="font-mono text-xs opacity-70">
+              <span v-if="z.hub_latitude && z.hub_longitude">
+                {{ Number(z.hub_latitude).toFixed(4) }}, {{ Number(z.hub_longitude).toFixed(4) }}
+              </span>
+              <span v-else class="opacity-50">—</span>
+            </td>
             <td>{{ z.sort_order }}</td>
             <td>
               <span :class="['badge badge-sm', z.status === 'ACTIVE' ? 'badge-success' : 'badge-ghost']">
@@ -77,16 +87,57 @@
           </label>
 
           <label class="fieldset">
-            <span class="fieldset-legend">Fee (USD)</span>
+            <span class="fieldset-legend">Hub name</span>
             <input
-              v-model.number="form.fee_usd"
-              type="number"
-              step="0.01"
-              min="0"
-              :class="['input input-bordered w-full', errors.fee_usd ? 'input-error' : '']"
+              v-model="form.hub_name"
+              type="text"
+              placeholder="e.g. Delivo Harare Hub"
+              :class="['input input-bordered w-full', errors.hub_name ? 'input-error' : '']"
             />
-            <span v-if="errors.fee_usd" class="text-xs text-red-600">{{ errors.fee_usd }}</span>
+            <span v-if="errors.hub_name" class="text-xs text-red-600">{{ errors.hub_name }}</span>
           </label>
+
+          <label class="fieldset">
+            <span class="fieldset-legend">Hub address</span>
+            <input
+              v-model="form.hub_address"
+              type="text"
+              placeholder="Street, area, city"
+              :class="['input input-bordered w-full', errors.hub_address ? 'input-error' : '']"
+            />
+            <span v-if="errors.hub_address" class="text-xs text-red-600">{{ errors.hub_address }}</span>
+          </label>
+
+          <div class="grid grid-cols-2 gap-2">
+            <label class="fieldset">
+              <span class="fieldset-legend">Latitude</span>
+              <input
+                v-model.number="form.hub_latitude"
+                type="number"
+                step="0.000001"
+                min="-90"
+                max="90"
+                placeholder="-17.7945"
+                :class="['input input-bordered w-full font-mono text-sm', errors.hub_latitude ? 'input-error' : '']"
+              />
+            </label>
+            <label class="fieldset">
+              <span class="fieldset-legend">Longitude</span>
+              <input
+                v-model.number="form.hub_longitude"
+                type="number"
+                step="0.000001"
+                min="-180"
+                max="180"
+                placeholder="31.0335"
+                :class="['input input-bordered w-full font-mono text-sm', errors.hub_longitude ? 'input-error' : '']"
+              />
+            </label>
+          </div>
+          <span class="text-xs opacity-60">
+            Lat/long is used as the origin for the Google Distance Matrix call. If left blank, the
+            hub address is used instead — less accurate.
+          </span>
 
           <label class="fieldset">
             <span class="fieldset-legend">Sort order</span>
@@ -124,7 +175,10 @@ useHead({ title: 'Coverage areas — Delivo Admin' });
 interface Zone {
   id: number;
   city: string;
-  fee_usd: string | number;
+  hub_name: string | null;
+  hub_address: string | null;
+  hub_latitude: string | number | null;
+  hub_longitude: string | number | null;
   sort_order: number;
   status: 'ACTIVE' | 'ARCHIVED';
 }
@@ -140,7 +194,10 @@ const editingId = ref<number | null>(null);
 
 const blankForm = () => ({
   city: '',
-  fee_usd: 0 as number,
+  hub_name: '',
+  hub_address: '',
+  hub_latitude: null as number | null,
+  hub_longitude: null as number | null,
   sort_order: 0 as number,
   status: 'ACTIVE' as 'ACTIVE' | 'ARCHIVED',
 });
@@ -171,7 +228,10 @@ const openCreate = () => {
 
 const openEdit = (z: Zone) => {
   form.city = z.city;
-  form.fee_usd = Number(z.fee_usd);
+  form.hub_name = z.hub_name ?? '';
+  form.hub_address = z.hub_address ?? '';
+  form.hub_latitude = z.hub_latitude !== null ? Number(z.hub_latitude) : null;
+  form.hub_longitude = z.hub_longitude !== null ? Number(z.hub_longitude) : null;
   form.sort_order = z.sort_order;
   form.status = z.status;
   editingId.value = z.id;
@@ -191,12 +251,16 @@ const applyServerErrors = (payload: any) => {
 const onSubmit = async () => {
   clearErrors();
   if (!form.city.trim()) { errors.city = 'City is required.'; return; }
-  if (form.fee_usd < 0) { errors.fee_usd = 'Fee must be ≥ 0.'; return; }
+  if (!form.hub_name.trim()) { errors.hub_name = 'Hub name is required.'; return; }
+  if (!form.hub_address.trim()) { errors.hub_address = 'Hub address is required.'; return; }
 
   submitting.value = true;
   const payload = {
     city: form.city.trim(),
-    fee_usd: form.fee_usd,
+    hub_name: form.hub_name.trim(),
+    hub_address: form.hub_address.trim(),
+    hub_latitude: form.hub_latitude,
+    hub_longitude: form.hub_longitude,
     sort_order: form.sort_order,
     ...(editingId.value ? { status: form.status } : {}),
   };
