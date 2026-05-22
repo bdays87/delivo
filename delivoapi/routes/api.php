@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Customer\OrderController;
 use App\Http\Controllers\Api\MobileWalletController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Provider\ProviderController;
+use App\Http\Controllers\Api\Provider\ProviderShipmentController;
 use App\Http\Controllers\Api\Vendor\VendorController;
 use App\Http\Controllers\Api\Vendor\VendorDashboardController;
 use App\Http\Controllers\Api\Vendor\VendorPayoutAccountController;
@@ -92,6 +93,17 @@ Route::prefix('v1')->group(function () {
         Route::get('provider/me', [ProviderController::class, 'currentProvider'])->name('v1.provider.me');
         Route::post('provider/me/kyc-documents', [ProviderController::class, 'uploadKyc'])->name('v1.provider.kyc.upload');
         Route::post('provider/me/coverage', [ProviderController::class, 'syncCoverage'])->name('v1.provider.coverage.sync');
+
+        // Provider shipment pipeline
+        Route::get('provider/me/shipments', [ProviderShipmentController::class, 'index'])->name('v1.provider.shipments.index');
+        Route::get('provider/me/shipments/{shipmentId}', [ProviderShipmentController::class, 'show'])
+            ->whereNumber('shipmentId')->name('v1.provider.shipments.show');
+        Route::post('provider/me/shipments/{shipmentId}/pickup', [ProviderShipmentController::class, 'pickup'])
+            ->whereNumber('shipmentId')->name('v1.provider.shipments.pickup');
+        Route::post('provider/me/shipments/{shipmentId}/dispatch', [ProviderShipmentController::class, 'dispatch'])
+            ->whereNumber('shipmentId')->name('v1.provider.shipments.dispatch');
+        Route::post('provider/me/shipments/{shipmentId}/deliver', [ProviderShipmentController::class, 'deliver'])
+            ->whereNumber('shipmentId')->name('v1.provider.shipments.deliver');
 
         Route::post('vendor/apply', [VendorController::class, 'apply'])->name('v1.vendor.apply');
         Route::get('vendor/me', [VendorController::class, 'currentVendor'])->name('v1.vendor.me');

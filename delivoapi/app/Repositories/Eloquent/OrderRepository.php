@@ -29,6 +29,8 @@ class OrderRepository extends BaseRepository implements IOrderInterface
                 'items',
                 'mobileWallet:id,name,code',
                 'address',
+                'shipments.provider:id,business_name',
+                'shipments.vendor:id,business_name',
             ])
             ->where('order_number', $orderNumber)
             ->where('user_id', $userId)

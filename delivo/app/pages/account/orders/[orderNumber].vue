@@ -71,6 +71,25 @@
           <div v-if="store.current.ship_notes" class="mt-1 opacity-60">{{ store.current.ship_notes }}</div>
         </div>
       </section>
+
+      <section v-if="(store.current as any).shipments?.length" class="rounded-3xl border border-base-300 bg-base-100 p-6">
+        <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">Shipments</h2>
+        <ul class="mt-3 divide-y divide-base-300">
+          <li v-for="s in (store.current as any).shipments" :key="s.id" class="flex items-center justify-between gap-3 py-3 text-sm">
+            <div>
+              <div class="font-semibold">{{ s.vendor?.business_name ?? 'Shipment' }}</div>
+              <div class="text-xs opacity-60">
+                <span v-if="s.hub_name_snapshot">From {{ s.hub_name_snapshot }} · </span>
+                {{ s.distance_km !== null ? `${s.distance_km} km` : '' }}
+                <span v-if="s.provider"> · Carrier: {{ s.provider.business_name }}</span>
+              </div>
+            </div>
+            <span :class="['badge badge-sm', shipmentBadge(s.shipment_status)]">
+              {{ shipmentLabel(s.shipment_status) }}
+            </span>
+          </li>
+        </ul>
+      </section>
     </div>
   </section>
 </template>
@@ -111,4 +130,24 @@ const statusBadge = computed(() => ({
   CANCELLED: 'badge-error',
   REFUNDED: 'badge-ghost',
 }[store.current?.status as OrderStatus] ?? 'badge-ghost'));
+
+type ShipmentStatusKey = 'AWAITING_PROVIDER' | 'ASSIGNED' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+
+const shipmentLabel = (s: string): string => ({
+  AWAITING_PROVIDER: 'Awaiting provider',
+  ASSIGNED: 'Assigned',
+  PICKED_UP: 'Picked up',
+  OUT_FOR_DELIVERY: 'Out for delivery',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+}[s as ShipmentStatusKey] ?? s);
+
+const shipmentBadge = (s: string): string => ({
+  AWAITING_PROVIDER: 'badge-ghost',
+  ASSIGNED: 'badge-warning',
+  PICKED_UP: 'badge-info',
+  OUT_FOR_DELIVERY: 'badge-info',
+  DELIVERED: 'badge-success',
+  CANCELLED: 'badge-error',
+}[s as ShipmentStatusKey] ?? 'badge-ghost');
 </script>

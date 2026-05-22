@@ -23,6 +23,7 @@ class CheckoutService
         private readonly IOrderInterface $orders,
         private readonly IExchangeRateInterface $rates,
         private readonly PricingService $pricing,
+        private readonly ShipmentAssignmentService $assigner,
     ) {}
 
     /**
@@ -214,6 +215,11 @@ class CheckoutService
                     'delivery_fee_id' => $s['band_id'],
                 ]);
             }
+
+            // Match each shipment to a delivery provider whose coverage
+            // includes both the hub and destination cities. Shipments that
+            // don't match remain AWAITING_PROVIDER for admin assignment.
+            $this->assigner->assignForOrder($order->fresh('shipments'));
 
             return [
                 'order' => $order->load(['items', 'shipments', 'mobileWallet:id,name,code']),
