@@ -234,7 +234,6 @@ jobs:
 
             echo ">>> Reloading Nginx..."
             sudo nginx -s reload
-            sudo systemctl reload nginx
 
             echo ">>> Nuxt deployment complete."
             ENDSSH
