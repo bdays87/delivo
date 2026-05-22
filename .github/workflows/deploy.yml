@@ -197,50 +197,14 @@ jobs:
               node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0
             }
 
-            ensure_node() {
-              if [ "$(node_major)" -ge 20 ]; then
-                echo ">>> Node $(node -v) already OK at $(command -v node)"
-                return
-              fi
-
-              export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-              if [ -s "$NVM_DIR/nvm.sh" ]; then
-                echo ">>> Activating Node $NODE_VER via nvm..."
-                # shellcheck disable=SC1090
-                source "$NVM_DIR/nvm.sh"
-                nvm install "$NODE_VER"
-                nvm use "$NODE_VER"
-                export PATH="$(dirname "$(nvm which current)"):${PATH}"
-              fi
-
-              if [ "$(node_major)" -lt 20 ]; then
-                echo ">>> Installing Node $NODE_VER via NodeSource..."
-                curl -fsSL "https://deb.nodesource.com/setup_${NODE_VER}.x" | sudo -E bash -
-                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
-              fi
-
-              if [ "$(node_major)" -lt 20 ]; then
-                echo "ERROR: Node $(node -v) at $(command -v node) is still too old (need >= 20)."
-                exit 1
-              fi
-              echo ">>> Using Node $(node -v) at $(command -v node)"
-            }
-
-            ensure_node
+        
 
             echo ">>> Installing Node dependencies..."
             npm ci
 
             echo ">>> Building Nuxt..."
             npm run build
-
-            NODE_BIN="$(command -v node)"
-            echo ">>> Reloading PM2 process (interpreter: $NODE_BIN)..."
-            pm2 reload "$PM2_APP" --update-env || pm2 start .output/server/index.mjs \
-              --name "$PM2_APP" \
-              --interpreter "$NODE_BIN" \
-              -- --port 3000
-
+            pm2 restart delivo-client 
             echo ">>> Saving PM2 process list..."
             pm2 save
 
