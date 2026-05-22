@@ -229,10 +229,7 @@ jobs:
             fi
 
             echo ">>> Restarting (or starting) $PM2_APP via pm2..."
-            if pm2 describe "$PM2_APP" >/dev/null 2>&1; then
-              pm2 restart "$PM2_APP" --update-env
-            else
-              pm2 start .output/server/index.mjs --name "$PM2_APP"
+             pm2 restart all
             fi
 
             echo ">>> Saving PM2 process list..."
@@ -240,6 +237,7 @@ jobs:
 
             echo ">>> Reloading Nginx..."
             sudo nginx -s reload
+            sudo systemctl reload nginx
 
             echo ">>> Nuxt deployment complete."
             ENDSSH
