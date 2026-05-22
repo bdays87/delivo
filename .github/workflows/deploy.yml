@@ -257,7 +257,7 @@ jobs:
             https://${{ secrets.VPS_HOST }})
           echo "Health check status: $STATUS"
           if [ "$STATUS" != "200" ]; then
-            echo "Health check failed with status $STATUS" 
+            echo "Health check failed with status $STATUS"  
             exit 1
           fi
 
