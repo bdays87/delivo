@@ -103,11 +103,7 @@ jobs:
 
             BRANCH="${{ github.ref_name }}"
             echo ">>> Syncing to origin/$BRANCH..."
-            git remote prune origin || true
-            # Fetch into local branch directly (avoids stale refs/remotes/origin/* lock errors)
-            git fetch --force origin "refs/heads/$BRANCH:refs/heads/$BRANCH"
-            git checkout "$BRANCH"
-            git reset --hard "HEAD"
+            git pull origin main 
 
             echo ">>> Installing Composer dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction
@@ -179,10 +175,7 @@ jobs:
 
             BRANCH="${{ github.ref_name }}"
             echo ">>> Syncing to origin/$BRANCH..."
-            git remote prune origin || true
-            git fetch --force origin "refs/heads/$BRANCH:refs/heads/$BRANCH"
-            git checkout "$BRANCH"
-            git reset --hard "HEAD"
+            git pul origin main 
 
             echo ">>> Installing Node dependencies..."
             npm ci
