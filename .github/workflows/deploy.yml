@@ -105,9 +105,6 @@ jobs:
             php artisan route:cache
             php artisan view:cache
 
-            echo ">>> Running migrations..."
-            php artisan migrate --force
-
             echo ">>> Clearing old caches..."
             php artisan cache:clear
 
@@ -120,7 +117,7 @@ jobs:
         run: |
           sleep 5
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://${{ secrets.VPS_HOST }}/api/health)
+            https://${{ secrets.VPS_HOST }}/api/v1/ping)
           echo "Health check status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "Health check failed with status $STATUS"
@@ -202,8 +199,18 @@ jobs:
     if: always()
 
     steps:
+      # secrets cannot be referenced in `if:` — gate via a prior step instead
+      - name: Check Slack webhook is configured
+        id: slack
+        run: |
+          if [ -n "$SLACK_WEBHOOK" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
       - name: Send Slack notification
-        if: ${{ secrets.SLACK_WEBHOOK != '' }}
+        if: steps.slack.outputs.enabled == 'true'
         uses: slackapi/slack-github-action@v1.26.0
         with:
           payload: |
