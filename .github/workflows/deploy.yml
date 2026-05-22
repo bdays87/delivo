@@ -11,6 +11,7 @@ env:
   LARAVEL_PATH: /var/www/apps/delivo/delivoapi
   NUXT_PATH: /var/www/apps/delivo/delivo
   PM2_APP_NAME: delivo-client
+  NODE_VERSION: '22'
 
 jobs:
   # ────────────────────────────────────────────
@@ -103,7 +104,10 @@ jobs:
 
             BRANCH="${{ github.ref_name }}"
             echo ">>> Syncing to origin/$BRANCH..."
-            git pull origin main 
+            git remote prune origin || true
+            git fetch --force origin "refs/heads/$BRANCH:refs/heads/$BRANCH"
+            git checkout "$BRANCH"
+            git reset --hard "HEAD"
 
             echo ">>> Installing Composer dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction
@@ -182,18 +186,39 @@ jobs:
 
             BRANCH="${{ github.ref_name }}"
             echo ">>> Syncing to origin/$BRANCH..."
-            git pull origin main 
+            git remote prune origin || true
+            git fetch --force origin "refs/heads/$BRANCH:refs/heads/$BRANCH"
+            git checkout "$BRANCH"
+            git reset --hard "HEAD"
+
+            # Nuxt 4 / @clack/core require Node >= 20 (styleText in node:util)
+            if [ -s "$HOME/.nvm/nvm.sh" ]; then
+              . "$HOME/.nvm/nvm.sh"
+              nvm install ${{ env.NODE_VERSION }} --no-progress
+              nvm use ${{ env.NODE_VERSION }}
+            elif command -v fnm >/dev/null 2>&1; then
+              eval "$(fnm env)"
+              fnm install ${{ env.NODE_VERSION }} 2>/dev/null || true
+              fnm use ${{ env.NODE_VERSION }}
+            fi
+            NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]")
+            if [ "$NODE_MAJOR" -lt 20 ]; then
+              echo "ERROR: Node $(node -v) is too old. Install Node ${{ env.NODE_VERSION }} on the VPS (e.g. nvm install ${{ env.NODE_VERSION }})."
+              exit 1
+            fi
+            echo ">>> Using Node $(node -v)"
 
             echo ">>> Installing Node dependencies..."
-            npm install
+            npm ci
 
             echo ">>> Building Nuxt..."
             npm run build
 
-            echo ">>> Reloading PM2 process..."
+            NODE_BIN=$(command -v node)
+            echo ">>> Reloading PM2 process (interpreter: $NODE_BIN)..."
             pm2 reload "$PM2_APP" --update-env || pm2 start .output/server/index.mjs \
               --name "$PM2_APP" \
-              --interpreter node \
+              --interpreter "$NODE_BIN" \
               -- --port 3000
 
             echo ">>> Saving PM2 process list..."
