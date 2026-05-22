@@ -185,7 +185,7 @@ jobs:
             git pull origin main 
 
             echo ">>> Installing Node dependencies..."
-            npm ci
+            npm install
 
             echo ">>> Building Nuxt..."
             npm run build
