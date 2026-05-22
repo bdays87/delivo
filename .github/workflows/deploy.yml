@@ -122,15 +122,22 @@ jobs:
             echo ">>> Laravel deployment complete."
 
       - name: Laravel health check
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PUBLIC_URL: ${{ secrets.VPS_PUBLIC_URL }}
         run: |
           sleep 5
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://${{ secrets.VPS_HOST }}/api/v1/ping)
-          echo "Health check status: $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "Health check failed with status $STATUS"
-            exit 1
+          if [ -n "$VPS_PUBLIC_URL" ]; then
+            BASE="${VPS_PUBLIC_URL%/}"
+          else
+            BASE="https://${VPS_HOST}"
           fi
+          URL="${BASE}/api/v1/ping"
+          echo "Checking $URL"
+          BODY=$(curl -sfS "$URL")
+          echo "$BODY"
+          echo "$BODY" | jq -e '.status == true and .data.pong == true and .statusCode == 200' >/dev/null
+          echo "Laravel health check passed."
 
   # ────────────────────────────────────────────
   # JOB 2b: Deploy Nuxt
@@ -175,7 +182,7 @@ jobs:
 
             BRANCH="${{ github.ref_name }}"
             echo ">>> Syncing to origin/$BRANCH..."
-            git pul origin main 
+            git pull origin main 
 
             echo ">>> Installing Node dependencies..."
             npm ci
