@@ -42,7 +42,7 @@ jobs:
 
       - name: Run PHPUnit
         working-directory: ./delivoapi
-        run: php artisan test --parallel
+        run: php artisan test
 
       # ── Node / Nuxt ──
       - name: Set up Node
