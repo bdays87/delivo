@@ -79,6 +79,13 @@ class ModulesSeeder extends Seeder
                         'sort_order' => 3,
                     ],
                     [
+                        'name' => 'Vehicle types',
+                        'icon' => 'lucide:car',
+                        'url' => '/admin/vehicle-types',
+                        'default_permission' => 'can.access.vehicle-types',
+                        'sort_order' => 5,
+                    ],
+                    [
                         'name' => 'Disputes',
                         'icon' => 'lucide:gavel',
                         'url' => '/admin/disputes',

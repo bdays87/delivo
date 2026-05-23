@@ -19,6 +19,7 @@ use App\Interfaces\Repositories\IProductInterface;
 use App\Interfaces\Repositories\IProductPriceTierInterface;
 use App\Interfaces\Repositories\IProductVariantInterface;
 use App\Interfaces\Repositories\IUserInterface;
+use App\Interfaces\Repositories\IVehicleTypeInterface;
 use App\Interfaces\Repositories\IVendorInterface;
 use App\Interfaces\Repositories\IVendorKycDocumentInterface;
 use App\Interfaces\Repositories\IVendorPayoutAccountInterface;
@@ -39,6 +40,7 @@ use App\Repositories\Eloquent\ProductPriceTierRepository;
 use App\Repositories\Eloquent\ProductRepository;
 use App\Repositories\Eloquent\ProductVariantRepository;
 use App\Repositories\Eloquent\UserRepository;
+use App\Repositories\Eloquent\VehicleTypeRepository;
 use App\Repositories\Eloquent\VendorKycDocumentRepository;
 use App\Repositories\Eloquent\VendorPayoutAccountRepository;
 use App\Repositories\Eloquent\VendorRepository;
@@ -74,5 +76,6 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(IDeliveryFeeInterface::class, DeliveryFeeRepository::class);
         $this->app->bind(IDeliveryProviderInterface::class, DeliveryProviderRepository::class);
         $this->app->bind(IDeliveryProviderKycInterface::class, DeliveryProviderKycRepository::class);
+        $this->app->bind(IVehicleTypeInterface::class, VehicleTypeRepository::class);
     }
 }

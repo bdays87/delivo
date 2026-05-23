@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Admin\AdminModuleController;
 use App\Http\Controllers\Api\Admin\AdminPlatformSettingsController;
 use App\Http\Controllers\Api\Admin\AdminProductController;
 use App\Http\Controllers\Api\Admin\AdminRoleController;
+use App\Http\Controllers\Api\Admin\AdminVehicleTypeController;
 use App\Http\Controllers\Api\Admin\AdminVendorController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\CategoryController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Api\MobileWalletController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Provider\ProviderController;
 use App\Http\Controllers\Api\Provider\ProviderShipmentController;
+use App\Http\Controllers\Api\VehicleTypeController;
 use App\Http\Controllers\Api\Vendor\VendorController;
 use App\Http\Controllers\Api\Vendor\VendorDashboardController;
 use App\Http\Controllers\Api\Vendor\VendorPayoutAccountController;
@@ -53,6 +55,10 @@ Route::prefix('v1')->group(function () {
     // Used by vendor apply + checkout address forms to constrain choices.
     Route::get('coverage-areas/list', [CoverageAreaController::class, 'listActive'])
         ->name('v1.coverage-areas.list');
+
+    // Public vehicle types — powers the provider apply multi-select.
+    Route::get('vehicle-types/list', [VehicleTypeController::class, 'listActive'])
+        ->name('v1.vehicle-types.list');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('v1.auth.logout');
@@ -93,6 +99,9 @@ Route::prefix('v1')->group(function () {
         Route::get('provider/me', [ProviderController::class, 'currentProvider'])->name('v1.provider.me');
         Route::post('provider/me/kyc-documents', [ProviderController::class, 'uploadKyc'])->name('v1.provider.kyc.upload');
         Route::post('provider/me/coverage', [ProviderController::class, 'syncCoverage'])->name('v1.provider.coverage.sync');
+        Route::post('provider/me/routes', [ProviderController::class, 'syncRoutes'])->name('v1.provider.routes.sync');
+        Route::post('provider/me/offers-intra-city', [ProviderController::class, 'setOffersIntraCity'])
+            ->name('v1.provider.offers-intra-city');
 
         // Provider shipment pipeline
         Route::get('provider/me/shipments', [ProviderShipmentController::class, 'index'])->name('v1.provider.shipments.index');
@@ -165,6 +174,18 @@ Route::prefix('v1')->group(function () {
             Route::get('delivery-providers/{provider}/kyc-documents/{document}', [AdminDeliveryProviderController::class, 'downloadKyc'])
                 ->whereNumber(['provider', 'document'])
                 ->name('v1.admin.delivery-providers.kyc.download');
+
+            // Vehicle types (CRUD).
+            Route::get('vehicle-types', [AdminVehicleTypeController::class, 'index'])
+                ->name('v1.admin.vehicle-types.index');
+            Route::post('vehicle-types', [AdminVehicleTypeController::class, 'store'])
+                ->name('v1.admin.vehicle-types.store');
+            Route::get('vehicle-types/{id}', [AdminVehicleTypeController::class, 'show'])
+                ->whereNumber('id')->name('v1.admin.vehicle-types.show');
+            Route::put('vehicle-types/{id}', [AdminVehicleTypeController::class, 'update'])
+                ->whereNumber('id')->name('v1.admin.vehicle-types.update');
+            Route::delete('vehicle-types/{id}', [AdminVehicleTypeController::class, 'destroy'])
+                ->whereNumber('id')->name('v1.admin.vehicle-types.destroy');
 
             // Mobile wallet reference data
             Route::get('mobile-wallets', [AdminMobileWalletController::class, 'index'])->name('v1.admin.mobile-wallets.index');

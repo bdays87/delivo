@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Provider\DeliveryProviderApplyRequest;
 use App\Http\Requests\Provider\DeliveryProviderCoverageRequest;
 use App\Http\Requests\Provider\DeliveryProviderKycUploadRequest;
+use App\Http\Requests\Provider\DeliveryProviderRoutesRequest;
 use App\Http\Responses\ApiResponse;
 use App\Services\DeliveryProviderService;
 use Illuminate\Http\JsonResponse;
@@ -65,5 +66,33 @@ class ProviderController extends Controller
             $provider->fresh(['coverageAreas']),
             'Coverage updated.',
         );
+    }
+
+    public function syncRoutes(DeliveryProviderRoutesRequest $request): JsonResponse
+    {
+        $provider = $this->service->currentForUser($request->user());
+        if ($provider === null) {
+            return ApiResponse::notFound('No delivery provider application on file.');
+        }
+
+        $this->service->replaceRoutes($provider, $request->validated()['routes'] ?? []);
+
+        return ApiResponse::success(
+            $provider->fresh(['routes']),
+            'Routes updated.',
+        );
+    }
+
+    public function setOffersIntraCity(Request $request): JsonResponse
+    {
+        $provider = $this->service->currentForUser($request->user());
+        if ($provider === null) {
+            return ApiResponse::notFound('No delivery provider application on file.');
+        }
+
+        $request->validate(['offers_intra_city' => ['required', 'boolean']]);
+        $this->service->setOffersIntraCity($provider, (bool) $request->input('offers_intra_city'));
+
+        return ApiResponse::success($provider->fresh(), 'Intra-city flag updated.');
     }
 }

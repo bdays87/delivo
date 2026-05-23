@@ -28,18 +28,50 @@
           <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">Business</h2>
           <dl class="mt-3 grid gap-2 text-sm">
             <div><dt class="opacity-60">Base city</dt><dd>{{ store.current.base_city }}</dd></div>
-            <div><dt class="opacity-60">Vehicle types</dt><dd>{{ store.current.vehicle_types || '—' }}</dd></div>
+            <div>
+              <dt class="opacity-60">Route type</dt>
+              <dd>
+                {{ store.current.route_type === 'INTRA_CITY' ? 'Intra-city' : 'Inter-city' }}
+                <span v-if="store.current.route_type === 'INTER_CITY' && store.current.offers_intra_city" class="badge badge-xs ml-1">+ intra</span>
+              </dd>
+            </div>
+            <div>
+              <dt class="opacity-60">Vehicles</dt>
+              <dd>
+                <span v-if="!store.current.vehicle_types?.length" class="opacity-60">—</span>
+                <span v-else class="flex flex-wrap gap-1">
+                  <span v-for="v in store.current.vehicle_types" :key="v.id" class="badge badge-ghost gap-1">
+                    <Icon :name="v.icon" class="h-3 w-3" /> {{ v.name }}
+                  </span>
+                </span>
+              </dd>
+            </div>
             <div><dt class="opacity-60">Support email</dt><dd>{{ store.current.support_email }}</dd></div>
             <div><dt class="opacity-60">Support phone</dt><dd>{{ store.current.support_phone }}</dd></div>
           </dl>
         </section>
 
         <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
-          <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">Coverage</h2>
-          <div v-if="!store.current.coverage_areas?.length" class="mt-3 text-sm opacity-70">No coverage selected.</div>
+          <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">
+            {{ store.current.route_type === 'INTRA_CITY' ? 'Coverage cities' : 'Intra-city coverage' }}
+          </h2>
+          <div v-if="!store.current.coverage_areas?.length" class="mt-3 text-sm opacity-70">No cities selected.</div>
           <div v-else class="mt-3 flex flex-wrap gap-2">
             <span v-for="c in store.current.coverage_areas" :key="c.id" class="badge badge-ghost">{{ c.city }}</span>
           </div>
+
+          <template v-if="store.current.route_type === 'INTER_CITY'">
+            <h2 class="mt-6 text-sm font-semibold uppercase tracking-wider opacity-70">Routes</h2>
+            <div v-if="!store.current.routes?.length" class="mt-3 text-sm opacity-70">No routes declared.</div>
+            <ul v-else class="mt-3 space-y-2 text-sm">
+              <li v-for="r in store.current.routes" :key="r.id" class="rounded-2xl border border-base-300 bg-base-200/40 p-3">
+                <div class="font-medium">{{ r.origin_city }} → {{ r.destination_city }}</div>
+                <div v-if="r.waypoints?.length" class="mt-1 text-xs opacity-70">
+                  via {{ r.waypoints.join(', ') }}
+                </div>
+              </li>
+            </ul>
+          </template>
         </section>
       </div>
 

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             ModulesSeeder::class,
             AdminUserSeeder::class,
             DeliveryZonesSeeder::class,
+            VehicleTypesSeeder::class,
             SampleVendorSeeder::class,
             SampleProductsSeeder::class,
         ]);

@@ -18,4 +18,8 @@ interface IDeliveryProviderInterface extends IBaseInterface
     public function markStatus(DeliveryProvider $provider, string $status, array $extra = []): bool;
 
     public function syncCoverage(DeliveryProvider $provider, array $zoneIds): void;
+
+    public function syncVehicleTypes(DeliveryProvider $provider, array $vehicleTypeIds): void;
+
+    public function replaceRoutes(DeliveryProvider $provider, array $routes): void;
 }

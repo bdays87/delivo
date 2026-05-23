@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Interfaces\Repositories\IDeliveryProviderInterface;
 use App\Interfaces\Repositories\IDeliveryProviderKycInterface;
-use App\Interfaces\Repositories\IDeliveryZoneInterface;
 use App\Interfaces\Repositories\IUserInterface;
 use App\Models\DeliveryProvider;
 use App\Models\DeliveryProviderKycDocument;
@@ -19,10 +18,14 @@ class DeliveryProviderService
     public function __construct(
         private readonly IDeliveryProviderInterface $providers,
         private readonly IDeliveryProviderKycInterface $kyc,
-        private readonly IDeliveryZoneInterface $zones,
         private readonly IUserInterface $users,
     ) {}
 
+    /**
+     * Apply as a delivery provider. Captures business info, route_type
+     * (INTRA_CITY or INTER_CITY), vehicle types and (for inter-city
+     * fleets) the optional offers_intra_city flag.
+     */
     public function apply(User $owner, array $data): ?DeliveryProvider
     {
         if ($this->providers->findByOwner($owner->id) !== null) {
@@ -30,13 +33,21 @@ class DeliveryProviderService
         }
 
         return DB::transaction(function () use ($owner, $data) {
-            $provider = $this->providers->create(array_merge(
-                $data,
-                [
-                    'owner_user_id' => $owner->id,
-                    'status' => DeliveryProvider::STATUS_PENDING,
-                ],
-            ));
+            $vehicleTypeIds = $data['vehicle_type_ids'] ?? [];
+            $providerData = [
+                'business_name' => $data['business_name'],
+                'slug' => $data['slug'],
+                'support_email' => $data['support_email'],
+                'support_phone' => $data['support_phone'],
+                'base_city' => $data['base_city'],
+                'route_type' => $data['route_type'],
+                'offers_intra_city' => (bool) ($data['offers_intra_city'] ?? false),
+                'owner_user_id' => $owner->id,
+                'status' => DeliveryProvider::STATUS_PENDING,
+            ];
+
+            $provider = $this->providers->create($providerData);
+            $this->providers->syncVehicleTypes($provider, $vehicleTypeIds);
 
             $this->users->assignRole($owner, 'delivery_provider');
 
@@ -46,7 +57,12 @@ class DeliveryProviderService
 
     public function currentForUser(User $user): ?DeliveryProvider
     {
-        return $this->providers->findByOwner($user->id, ['kycDocuments', 'coverageAreas']);
+        return $this->providers->findByOwner($user->id, [
+            'kycDocuments',
+            'coverageAreas',
+            'vehicleTypes',
+            'routes',
+        ]);
     }
 
     public function attachKycDocument(DeliveryProvider $provider, string $type, UploadedFile $file): DeliveryProviderKycDocument
@@ -65,13 +81,23 @@ class DeliveryProviderService
         ]);
     }
 
-    /**
-     * Provider chooses which coverage cities they serve. Only ACTIVE
-     * delivery_zones are allowed; the controller has already validated
-     * the IDs against the active list.
-     */
     public function syncCoverage(DeliveryProvider $provider, array $zoneIds): void
     {
         $this->providers->syncCoverage($provider, $zoneIds);
+    }
+
+    public function syncVehicleTypes(DeliveryProvider $provider, array $vehicleTypeIds): void
+    {
+        $this->providers->syncVehicleTypes($provider, $vehicleTypeIds);
+    }
+
+    public function replaceRoutes(DeliveryProvider $provider, array $routes): void
+    {
+        $this->providers->replaceRoutes($provider, $routes);
+    }
+
+    public function setOffersIntraCity(DeliveryProvider $provider, bool $offers): void
+    {
+        $provider->forceFill(['offers_intra_city' => $offers])->save();
     }
 }

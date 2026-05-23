@@ -19,12 +19,18 @@ class AdminDeliveryProviderService
 
     public function listByStatus(?string $status = null): Collection
     {
-        return $this->providers->listByStatus($status, ['owner:id,name,email,phone', 'coverageAreas']);
+        return $this->providers->listByStatus($status, ['owner:id,name,email,phone', 'coverageAreas', 'vehicleTypes']);
     }
 
     public function find(int $id): ?DeliveryProvider
     {
-        return $this->providers->findById($id, ['*'], ['owner:id,name,email,phone', 'kycDocuments', 'coverageAreas']);
+        return $this->providers->findById($id, ['*'], [
+            'owner:id,name,email,phone',
+            'kycDocuments',
+            'coverageAreas',
+            'vehicleTypes',
+            'routes',
+        ]);
     }
 
     public function approve(DeliveryProvider $provider): bool

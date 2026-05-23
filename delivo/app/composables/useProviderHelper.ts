@@ -43,5 +43,23 @@ export const useProviderHelper = () => {
     }
   };
 
-  return { apply, getCurrent, uploadKyc, syncCoverage };
+  const syncRoutes = async (routes: Array<{ origin_city: string; destination_city: string; waypoints: string[] }>) => {
+    try {
+      const data = await client('/api/v1/provider/me/routes', { method: 'POST', body: { routes } });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  const setOffersIntraCity = async (offers: boolean) => {
+    try {
+      const data = await client('/api/v1/provider/me/offers-intra-city', { method: 'POST', body: { offers_intra_city: offers } });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  return { apply, getCurrent, uploadKyc, syncCoverage, syncRoutes, setOffersIntraCity };
 };

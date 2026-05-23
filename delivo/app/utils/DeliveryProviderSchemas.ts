@@ -9,5 +9,11 @@ export const DeliveryProviderApplySchema = yup.object({
   support_email: yup.string().required('Support email is required').email('Enter a valid email'),
   support_phone: yup.string().required('Support phone is required').matches(zwPhoneRegex, 'Enter a Zimbabwean mobile number, e.g. 0772 000 000'),
   base_city: yup.string().required('Pick your base city').max(120),
-  vehicle_types: yup.string().nullable().max(255),
+  route_type: yup.string().oneOf(['INTRA_CITY', 'INTER_CITY'], 'Pick a route type').required('Pick a route type'),
+  offers_intra_city: yup.boolean().default(false),
+  vehicle_type_ids: yup
+    .array()
+    .of(yup.number().integer())
+    .min(1, 'Pick at least one vehicle type your fleet uses')
+    .required('Pick at least one vehicle type'),
 });
