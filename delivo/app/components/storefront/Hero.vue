@@ -248,6 +248,27 @@ const slides: HeroSlide[] = [
       subtitle: 'ETA 45 min · Avondale',
     },
   },
+  {
+    id: 'fleet',
+    badge: 'For fleet owners',
+    badgeIcon: 'lucide:truck',
+    title: 'Deliver on Delivo. ',
+    titleAccent: 'Grow your fleet.',
+    description:
+      "Plug your fleet into Delivo's order pipeline and we'll feed it work. Pick the cities you cover, get matched to vendor pickups + customer drop-offs in real time, and get paid for every delivered shipment.",
+    image: '/images/hero/parcels.png',
+    imageAlt: 'Delivery fleet operating across Zimbabwe',
+    imagePosition: '68% 45%',
+    ctaLabel: 'Become a partner',
+    ctaTo: '/providers/apply',
+    secondaryCta: { label: 'Read more', to: '/about/providers' },
+    floating: {
+      icon: 'lucide:trending-up',
+      iconBg: 'bg-success/15 text-success',
+      title: '3 shipments today',
+      subtitle: 'All-Zim Couriers · $36 earned',
+    },
+  },
 ];
 
 const isHashLink = (to: string) => to.startsWith('#');

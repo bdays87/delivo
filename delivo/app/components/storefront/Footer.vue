@@ -57,7 +57,8 @@
         <div class="mb-4 text-sm font-semibold opacity-60">Partner with Delivo</div>
         <ul class="space-y-2 text-sm">
           <li><NuxtLink to="/vendor/apply" class="opacity-80 hover:opacity-100">Sell on Delivo</NuxtLink></li>
-          <li><NuxtLink to="/providers/apply" class="opacity-80 hover:opacity-100">Drive for Delivo</NuxtLink></li>
+          <li><NuxtLink to="/providers/apply" class="opacity-80 hover:opacity-100">Deliver on Delivo</NuxtLink></li>
+          <li><NuxtLink to="/about/providers" class="opacity-80 hover:opacity-100">How delivery works</NuxtLink></li>
           <li><NuxtLink to="/about/sellers" class="opacity-80 hover:opacity-100">How selling works</NuxtLink></li>
           <li><NuxtLink to="/about/shoppers" class="opacity-80 hover:opacity-100">How shopping works</NuxtLink></li>
         </ul>

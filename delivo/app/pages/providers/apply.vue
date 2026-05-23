@@ -3,12 +3,12 @@
     <div class="breadcrumbs text-sm opacity-70">
       <ul>
         <li><NuxtLink to="/">Home</NuxtLink></li>
-        <li>Drive for Delivo</li>
+        <li>Deliver on Delivo</li>
       </ul>
     </div>
 
     <h1 class="mt-4 text-3xl font-extrabold tracking-tight md:text-4xl">
-      Drive for Delivo
+      Deliver on Delivo
     </h1>
     <p class="mt-3 max-w-2xl text-base opacity-70">
       Tell us about your delivery operation. After you submit, upload your KYC documents and pick
@@ -162,7 +162,7 @@
 import { DeliveryProviderApplySchema } from '~/utils/DeliveryProviderSchemas';
 
 definePageMeta({ layout: 'default', middleware: ['auth'] });
-useHead({ title: 'Drive for Delivo' });
+useHead({ title: 'Deliver on Delivo' });
 
 const store = useProviderStore();
 const coverage = useCoverageStore();
