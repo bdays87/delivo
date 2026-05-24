@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Customer\CartController;
 use App\Http\Controllers\Api\Customer\CheckoutController;
 use App\Http\Controllers\Api\Customer\OrderController;
 use App\Http\Controllers\Api\Influencer\InfluencerController;
+use App\Http\Controllers\Api\Influencer\InfluencerProductController;
 use App\Http\Controllers\Api\MobileWalletController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Provider\ProviderController;
@@ -102,6 +103,14 @@ Route::prefix('v1')->group(function () {
         Route::post('influencer/me/handles', [InfluencerController::class, 'addHandle'])->name('v1.influencer.handles.add');
         Route::delete('influencer/me/handles/{handleId}', [InfluencerController::class, 'deleteHandle'])
             ->whereNumber('handleId')->name('v1.influencer.handles.delete');
+
+        // Influencer product browse + code generation
+        Route::get('influencer/me/products', [InfluencerProductController::class, 'index'])
+            ->name('v1.influencer.products.index');
+        Route::post('influencer/me/products/{productId}/code', [InfluencerProductController::class, 'createCode'])
+            ->whereNumber('productId')->name('v1.influencer.products.code');
+        Route::get('influencer/me/codes', [InfluencerProductController::class, 'codes'])
+            ->name('v1.influencer.codes.index');
 
         // Delivery provider self-service (apply, KYC, coverage selection)
         Route::post('provider/apply', [ProviderController::class, 'apply'])->name('v1.provider.apply');

@@ -40,6 +40,8 @@ export interface Product {
   description: string | null;
   sku: string | null;
   weight_kg: string | number | null;
+  affiliate_influencer_pct?: string | number;
+  affiliate_buyer_discount_pct?: string | number;
   status: ProductStatus;
   submitted_at: string | null;
   approved_at: string | null;

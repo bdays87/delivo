@@ -19,6 +19,10 @@ class DeliveryZonesSeeder extends Seeder
         PlatformSettings::query()->firstOrCreate([], [
             'service_charge_pct' => 2.50,
             'service_charge_min_usd' => 0.50,
+            'affiliate_total_min_pct' => 1.00,
+            'affiliate_total_max_pct' => 30.00,
+            'influencer_payout_fee_pct' => 2.50,
+            'influencer_payout_fee_min_usd' => 0.50,
         ]);
 
         // Coverage areas with dispatch hubs. Lat/long are approximate city

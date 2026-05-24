@@ -45,6 +45,41 @@
         </p>
       </section>
 
+      <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
+        <h2 class="text-lg font-bold">Affiliate program</h2>
+        <p class="mt-1 text-sm opacity-70">
+          Caps on the total commission vendors can declare per product (influencer % + buyer
+          discount %). Both checked when vendors save a product.
+        </p>
+        <div class="mt-4 grid gap-3 md:grid-cols-2">
+          <label class="fieldset">
+            <span class="fieldset-legend">Minimum total %</span>
+            <input v-model.number="form.affiliate_total_min_pct" type="number" step="0.01" min="0" max="100" class="input input-bordered" />
+          </label>
+          <label class="fieldset">
+            <span class="fieldset-legend">Maximum total %</span>
+            <input v-model.number="form.affiliate_total_max_pct" type="number" step="0.01" min="0" max="100" class="input input-bordered" />
+          </label>
+        </div>
+      </section>
+
+      <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
+        <h2 class="text-lg font-bold">Influencer payout fee</h2>
+        <p class="mt-1 text-sm opacity-70">
+          Deducted from influencer earnings when their balance is paid out. Floors at the minimum.
+        </p>
+        <div class="mt-4 grid gap-3 md:grid-cols-2">
+          <label class="fieldset">
+            <span class="fieldset-legend">Fee % of payout</span>
+            <input v-model.number="form.influencer_payout_fee_pct" type="number" step="0.01" min="0" max="100" class="input input-bordered" />
+          </label>
+          <label class="fieldset">
+            <span class="fieldset-legend">Floor (USD)</span>
+            <input v-model.number="form.influencer_payout_fee_min_usd" type="number" step="0.01" min="0" class="input input-bordered" />
+          </label>
+        </div>
+      </section>
+
       <section class="rounded-3xl border border-base-300 bg-base-200/40 p-5 text-sm">
         <div class="flex items-start gap-3">
           <Icon name="lucide:info" class="h-5 w-5 text-info" />
@@ -76,6 +111,10 @@ useHead({ title: 'Platform settings — Delivo Admin' });
 interface SettingsForm {
   service_charge_pct: number;
   service_charge_min_usd: number;
+  affiliate_total_min_pct: number;
+  affiliate_total_max_pct: number;
+  influencer_payout_fee_pct: number;
+  influencer_payout_fee_min_usd: number;
 }
 
 const { getSettings, updateSettings } = useAdminPlatformSettingsHelper();
@@ -86,6 +125,10 @@ const submitting = ref(false);
 const form = reactive<SettingsForm>({
   service_charge_pct: 2.5,
   service_charge_min_usd: 0.5,
+  affiliate_total_min_pct: 1,
+  affiliate_total_max_pct: 30,
+  influencer_payout_fee_pct: 2.5,
+  influencer_payout_fee_min_usd: 0.5,
 });
 
 onMounted(async () => {
@@ -96,6 +139,10 @@ onMounted(async () => {
     if (s) {
       form.service_charge_pct = Number(s.service_charge_pct);
       form.service_charge_min_usd = Number(s.service_charge_min_usd);
+      if (s.affiliate_total_min_pct !== undefined) form.affiliate_total_min_pct = Number(s.affiliate_total_min_pct);
+      if (s.affiliate_total_max_pct !== undefined) form.affiliate_total_max_pct = Number(s.affiliate_total_max_pct);
+      if (s.influencer_payout_fee_pct !== undefined) form.influencer_payout_fee_pct = Number(s.influencer_payout_fee_pct);
+      if (s.influencer_payout_fee_min_usd !== undefined) form.influencer_payout_fee_min_usd = Number(s.influencer_payout_fee_min_usd);
     }
   }
   loading.value = false;

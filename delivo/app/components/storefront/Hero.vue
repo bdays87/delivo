@@ -269,6 +269,27 @@ const slides: HeroSlide[] = [
       subtitle: 'All-Zim Couriers · $36 earned',
     },
   },
+  {
+    id: 'influencers',
+    badge: 'For influencers',
+    badgeIcon: 'lucide:megaphone',
+    title: 'Share products. ',
+    titleAccent: 'Earn commission.',
+    description:
+      'Join Delivo as an approved influencer, pick products that pay affiliate commission, and share your unique code with your audience. When shoppers buy through your link, you earn a cut — vendors set the rate on each product.',
+    image: '/images/hero/influencers.png',
+    imageAlt: 'Influencer promoting Delivo products with affiliate commission',
+    imagePosition: '70% 35%',
+    ctaLabel: 'Become an influencer',
+    ctaTo: '/influencers/apply',
+    secondaryCta: { label: 'Read more', to: '/about/influencers' },
+    floating: {
+      icon: 'lucide:percent',
+      iconBg: 'bg-accent/30 text-accent-content',
+      title: '12% commission',
+      subtitle: 'Wireless earbuds · 3 sales today',
+    },
+  },
 ];
 
 const isHashLink = (to: string) => to.startsWith('#');

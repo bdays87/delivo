@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Interfaces\Repositories\IAddressInterface;
 use App\Interfaces\Repositories\ICartInterface;
 use App\Interfaces\Repositories\ICategoryInterface;
+use App\Interfaces\Repositories\ICouponInterface;
 use App\Interfaces\Repositories\IDeliveryFeeInterface;
 use App\Interfaces\Repositories\IDeliveryProviderInterface;
 use App\Interfaces\Repositories\IDeliveryProviderKycInterface;
@@ -27,6 +28,7 @@ use App\Interfaces\Repositories\IVendorPayoutAccountInterface;
 use App\Repositories\Eloquent\AddressRepository;
 use App\Repositories\Eloquent\CartRepository;
 use App\Repositories\Eloquent\CategoryRepository;
+use App\Repositories\Eloquent\CouponRepository;
 use App\Repositories\Eloquent\DeliveryFeeRepository;
 use App\Repositories\Eloquent\DeliveryProviderKycRepository;
 use App\Repositories\Eloquent\DeliveryProviderRepository;
@@ -80,5 +82,6 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(IDeliveryProviderKycInterface::class, DeliveryProviderKycRepository::class);
         $this->app->bind(IVehicleTypeInterface::class, VehicleTypeRepository::class);
         $this->app->bind(IInfluencerInterface::class, InfluencerRepository::class);
+        $this->app->bind(ICouponInterface::class, CouponRepository::class);
     }
 }

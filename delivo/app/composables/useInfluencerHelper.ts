@@ -37,7 +37,34 @@ export const useInfluencerHelper = () => {
     }
   };
 
-  return { apply, getCurrent, addHandle, deleteHandle };
+  const listProducts = async () => {
+    try {
+      const data = await client('/api/v1/influencer/me/products', { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
+  const generateCode = async (productId: number) => {
+    try {
+      const data = await client(`/api/v1/influencer/me/products/${productId}/code`, { method: 'POST' });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  const listCodes = async () => {
+    try {
+      const data = await client('/api/v1/influencer/me/codes', { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
+  return { apply, getCurrent, addHandle, deleteHandle, listProducts, generateCode, listCodes };
 };
 
 export const useAdminInfluencerHelper = () => {

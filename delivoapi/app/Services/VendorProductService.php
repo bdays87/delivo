@@ -59,6 +59,8 @@ class VendorProductService
                 'description' => $data['description'] ?? null,
                 'sku' => $data['sku'] ?? null,
                 'weight_kg' => $data['weight_kg'] ?? null,
+                'affiliate_influencer_pct' => $data['affiliate_influencer_pct'] ?? 0,
+                'affiliate_buyer_discount_pct' => $data['affiliate_buyer_discount_pct'] ?? 0,
                 'status' => Product::STATUS_PENDING,
                 'submitted_at' => now(),
             ]);
@@ -83,6 +85,8 @@ class VendorProductService
                 'description' => $data['description'] ?? null,
                 'sku' => $data['sku'] ?? null,
                 'weight_kg' => $data['weight_kg'] ?? null,
+                'affiliate_influencer_pct' => $data['affiliate_influencer_pct'] ?? 0,
+                'affiliate_buyer_discount_pct' => $data['affiliate_buyer_discount_pct'] ?? 0,
             ];
 
             if ($product->status === Product::STATUS_ACTIVE) {

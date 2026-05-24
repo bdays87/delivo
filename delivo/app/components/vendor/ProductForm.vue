@@ -60,6 +60,50 @@
     </section>
 
     <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
+      <div>
+        <h2 class="text-lg font-bold">Affiliate program (optional)</h2>
+        <p class="mt-1 text-sm opacity-70">
+          Reward influencers for promoting this product and give buyers a discount when they use
+          the influencer's code. Set both to 0 to opt out of the program.
+        </p>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3">
+        <label class="fieldset">
+          <span class="fieldset-legend">Influencer commission (%)</span>
+          <input
+            v-model.number="form.affiliate_influencer_pct"
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            placeholder="e.g. 10"
+            :class="['input input-bordered w-full', errors.affiliate_influencer_pct ? 'input-error' : '']"
+          />
+          <span v-if="errors.affiliate_influencer_pct" class="text-xs text-red-600">{{ errors.affiliate_influencer_pct }}</span>
+        </label>
+        <label class="fieldset">
+          <span class="fieldset-legend">Buyer discount (%)</span>
+          <input
+            v-model.number="form.affiliate_buyer_discount_pct"
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            placeholder="e.g. 5"
+            class="input input-bordered w-full"
+          />
+        </label>
+        <div class="fieldset">
+          <span class="fieldset-legend">Total commission</span>
+          <div class="rounded-2xl bg-base-200/40 px-4 py-3 text-lg font-bold">
+            {{ affiliateTotal.toFixed(2) }}%
+          </div>
+          <span class="text-xs opacity-60">Influencer % + buyer % — both paid out of the sale.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
       <div class="flex items-start justify-between gap-4">
         <div>
           <h2 class="text-lg font-bold">Price tiers (USD)</h2>
@@ -209,6 +253,8 @@ interface FormState {
   description: string;
   sku: string;
   weight_kg: number | null;
+  affiliate_influencer_pct: number;
+  affiliate_buyer_discount_pct: number;
   price_tiers: ProductPriceTier[];
   variants: ProductVariant[];
 }
@@ -219,9 +265,15 @@ const blank = (): FormState => ({
   description: '',
   sku: '',
   weight_kg: null,
+  affiliate_influencer_pct: 0,
+  affiliate_buyer_discount_pct: 0,
   price_tiers: [{ min_qty: 1, unit_price: 0 }],
   variants: [{ color: '', stock_quantity: 0, sku: '' }],
 });
+
+const affiliateTotal = computed(() =>
+  Number(form.affiliate_influencer_pct ?? 0) + Number(form.affiliate_buyer_discount_pct ?? 0),
+);
 
 const form = reactive<FormState>(blank());
 const errors = reactive<Record<string, string>>({});
@@ -232,6 +284,8 @@ const hydrate = (product: Product) => {
   form.description = product.description ?? '';
   form.sku = product.sku ?? '';
   form.weight_kg = product.weight_kg !== null ? Number(product.weight_kg) : null;
+  form.affiliate_influencer_pct = Number(product.affiliate_influencer_pct ?? 0);
+  form.affiliate_buyer_discount_pct = Number(product.affiliate_buyer_discount_pct ?? 0);
   form.price_tiers = (product.price_tiers ?? []).map((t) => ({
     min_qty: Number(t.min_qty),
     unit_price: Number(t.unit_price),
@@ -283,6 +337,8 @@ const handleSubmit = async () => {
       description: valid.description ?? null,
       sku: valid.sku ?? null,
       weight_kg: valid.weight_kg ?? null,
+      affiliate_influencer_pct: Number(valid.affiliate_influencer_pct ?? 0),
+      affiliate_buyer_discount_pct: Number(valid.affiliate_buyer_discount_pct ?? 0),
       price_tiers: valid.price_tiers.map((t) => ({
         min_qty: Number(t.min_qty),
         unit_price: Number(t.unit_price),

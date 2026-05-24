@@ -27,6 +27,8 @@ class Product extends Model
         'description',
         'sku',
         'weight_kg',
+        'affiliate_influencer_pct',
+        'affiliate_buyer_discount_pct',
         'status',
         'submitted_at',
         'approved_at',
@@ -38,6 +40,8 @@ class Product extends Model
     {
         return [
             'weight_kg' => 'decimal:3',
+            'affiliate_influencer_pct' => 'decimal:2',
+            'affiliate_buyer_discount_pct' => 'decimal:2',
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',

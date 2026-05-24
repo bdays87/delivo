@@ -45,6 +45,18 @@ export const ProductSchema = yup.object({
     .transform((v, orig) => (orig === '' || orig === null || orig === undefined ? null : v))
     .min(0)
     .max(9999.999),
+  affiliate_influencer_pct: yup
+    .number()
+    .transform((v, orig) => (orig === '' || orig === null || orig === undefined ? 0 : v))
+    .min(0, 'Cannot be negative')
+    .max(100)
+    .default(0),
+  affiliate_buyer_discount_pct: yup
+    .number()
+    .transform((v, orig) => (orig === '' || orig === null || orig === undefined ? 0 : v))
+    .min(0, 'Cannot be negative')
+    .max(100)
+    .default(0),
   price_tiers: yup.array().of(priceTierSchema).min(1, 'Add at least one price tier').required(),
   variants: yup.array().of(variantSchema).min(1, 'Add at least one variant').required(),
 });

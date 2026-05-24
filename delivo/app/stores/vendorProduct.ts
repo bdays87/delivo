@@ -7,6 +7,8 @@ export interface VendorProductPayload {
   description?: string | null;
   sku?: string | null;
   weight_kg?: number | null;
+  affiliate_influencer_pct?: number;
+  affiliate_buyer_discount_pct?: number;
   price_tiers: ProductPriceTier[];
   variants: ProductVariant[];
 }
