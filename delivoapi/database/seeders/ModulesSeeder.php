@@ -49,6 +49,13 @@ class ModulesSeeder extends Seeder
                         'default_permission' => 'can.access.products',
                         'sort_order' => 3,
                     ],
+                    [
+                        'name' => 'Influencers',
+                        'icon' => 'lucide:megaphone',
+                        'url' => '/admin/influencers',
+                        'default_permission' => 'can.access.influencers',
+                        'sort_order' => 4,
+                    ],
                 ],
             ],
             [

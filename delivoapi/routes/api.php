@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\AdminDeliveryFeeController;
 use App\Http\Controllers\Api\Admin\AdminDeliveryProviderController;
 use App\Http\Controllers\Api\Admin\AdminDeliveryZoneController;
 use App\Http\Controllers\Api\Admin\AdminExchangeRateController;
+use App\Http\Controllers\Api\Admin\AdminInfluencerController;
 use App\Http\Controllers\Api\Admin\AdminMobileWalletController;
 use App\Http\Controllers\Api\Admin\AdminModuleController;
 use App\Http\Controllers\Api\Admin\AdminPlatformSettingsController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Api\Customer\AddressController;
 use App\Http\Controllers\Api\Customer\CartController;
 use App\Http\Controllers\Api\Customer\CheckoutController;
 use App\Http\Controllers\Api\Customer\OrderController;
+use App\Http\Controllers\Api\Influencer\InfluencerController;
 use App\Http\Controllers\Api\MobileWalletController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Provider\ProviderController;
@@ -93,6 +95,13 @@ Route::prefix('v1')->group(function () {
         Route::get('orders', [OrderController::class, 'index'])->name('v1.orders.index');
         Route::get('orders/{orderNumber}', [OrderController::class, 'show'])
             ->where('orderNumber', '[A-Z0-9-]+')->name('v1.orders.show');
+
+        // Influencer self-service
+        Route::post('influencer/apply', [InfluencerController::class, 'apply'])->name('v1.influencer.apply');
+        Route::get('influencer/me', [InfluencerController::class, 'currentInfluencer'])->name('v1.influencer.me');
+        Route::post('influencer/me/handles', [InfluencerController::class, 'addHandle'])->name('v1.influencer.handles.add');
+        Route::delete('influencer/me/handles/{handleId}', [InfluencerController::class, 'deleteHandle'])
+            ->whereNumber('handleId')->name('v1.influencer.handles.delete');
 
         // Delivery provider self-service (apply, KYC, coverage selection)
         Route::post('provider/apply', [ProviderController::class, 'apply'])->name('v1.provider.apply');
@@ -174,6 +183,21 @@ Route::prefix('v1')->group(function () {
             Route::get('delivery-providers/{provider}/kyc-documents/{document}', [AdminDeliveryProviderController::class, 'downloadKyc'])
                 ->whereNumber(['provider', 'document'])
                 ->name('v1.admin.delivery-providers.kyc.download');
+
+            // Influencer moderation
+            Route::get('influencers', [AdminInfluencerController::class, 'index'])
+                ->name('v1.admin.influencers.index');
+            Route::get('influencers/{id}', [AdminInfluencerController::class, 'show'])
+                ->whereNumber('id')->name('v1.admin.influencers.show');
+            Route::post('influencers/{id}/approve', [AdminInfluencerController::class, 'approve'])
+                ->whereNumber('id')->name('v1.admin.influencers.approve');
+            Route::post('influencers/{id}/reject', [AdminInfluencerController::class, 'reject'])
+                ->whereNumber('id')->name('v1.admin.influencers.reject');
+            Route::post('influencers/{id}/suspend', [AdminInfluencerController::class, 'suspend'])
+                ->whereNumber('id')->name('v1.admin.influencers.suspend');
+            Route::post('influencers/{influencer}/handles/{handle}/status', [AdminInfluencerController::class, 'setHandleStatus'])
+                ->whereNumber(['influencer', 'handle'])
+                ->name('v1.admin.influencers.handles.status');
 
             // Vehicle types (CRUD).
             Route::get('vehicle-types', [AdminVehicleTypeController::class, 'index'])
