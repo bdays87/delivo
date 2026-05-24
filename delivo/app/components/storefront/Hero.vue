@@ -256,9 +256,9 @@ const slides: HeroSlide[] = [
     titleAccent: 'Grow your fleet.',
     description:
       "Plug your fleet into Delivo's order pipeline and we'll feed it work. Pick the cities you cover, get matched to vendor pickups + customer drop-offs in real time, and get paid for every delivered shipment.",
-    image: '/images/hero/parcels.png',
-    imageAlt: 'Delivery fleet operating across Zimbabwe',
-    imagePosition: '68% 45%',
+    image: '/images/hero/fleet.png',
+    imageAlt: 'Fleet owner with Delivo-branded delivery trucks and bikes',
+    imagePosition: '62% 38%',
     ctaLabel: 'Become a partner',
     ctaTo: '/providers/apply',
     secondaryCta: { label: 'Read more', to: '/about/providers' },
