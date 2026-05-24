@@ -24,8 +24,20 @@ export interface CartLine {
   variant: CartLineVariant | null;
   quantity: number;
   unit_price_usd: string;
+  line_gross_usd?: string;
+  line_discount_usd?: string;
   line_total_usd: string;
+  coupon_applies_to_line?: boolean;
   stock_warning: boolean;
+}
+
+export interface AppliedCoupon {
+  id: number;
+  code: string;
+  buyer_discount_pct: number;
+  influencer_commission_pct: number;
+  product_id: number | null;
+  influencer_id: number | null;
 }
 
 export interface CartSnapshot {
@@ -33,8 +45,10 @@ export interface CartSnapshot {
   items: CartLine[];
   item_count: number;
   subtotal_usd: string;
+  total_discount_usd: string;
   service_charge_usd: string;
   items_total_usd: string;
+  applied_coupon: AppliedCoupon | null;
   shipping_note: string;
 }
 
@@ -43,8 +57,10 @@ const emptyCart = (): CartSnapshot => ({
   items: [],
   item_count: 0,
   subtotal_usd: '0.00',
+  total_discount_usd: '0.00',
   service_charge_usd: '0.00',
   items_total_usd: '0.00',
+  applied_coupon: null,
   shipping_note: 'Delivery calculated at checkout based on delivery city.',
 });
 
@@ -54,14 +70,16 @@ export const useCartStore = defineStore('cart', () => {
   const submitting = ref(false);
   const loaded = ref(false);
 
-  const { getCart, addItem, updateItem, removeItem, clearCart } = useCartHelper();
+  const { getCart, addItem, updateItem, removeItem, clearCart, applyCoupon, removeCoupon } = useCartHelper();
   const auth = useAuthStore();
   const toast = useToast();
 
   const itemCount = computed(() => cart.value.item_count);
   const subtotalUsd = computed(() => Number(cart.value.subtotal_usd));
+  const totalDiscountUsd = computed(() => Number(cart.value.total_discount_usd));
   const serviceChargeUsd = computed(() => Number(cart.value.service_charge_usd));
   const itemsTotalUsd = computed(() => Number(cart.value.items_total_usd));
+  const appliedCoupon = computed(() => cart.value.applied_coupon);
 
   const refresh = async (silent = false) => {
     if (!auth.isAuthenticated) {
@@ -170,10 +188,45 @@ export const useCartStore = defineStore('cart', () => {
     loaded.value = false;
   };
 
+  const applyCode = async (code: string): Promise<boolean> => {
+    submitting.value = true;
+    try {
+      const { data, status, error } = await applyCoupon(code);
+      if (status?.value) {
+        cart.value = ((data.value as any)?.data ?? cart.value) as CartSnapshot;
+        toast.success({ title: 'Code applied', message: cart.value.applied_coupon?.code ?? '', position: 'topRight', layout: 2 });
+        return true;
+      }
+      toast.error({
+        title: 'Could not apply code',
+        message: (error?.value as any)?.data?.message || 'Try again.',
+        position: 'topRight',
+        layout: 2,
+      });
+      return false;
+    } finally {
+      submitting.value = false;
+    }
+  };
+
+  const removeCode = async (): Promise<boolean> => {
+    submitting.value = true;
+    try {
+      const { data, status } = await removeCoupon();
+      if (status?.value) {
+        cart.value = ((data.value as any)?.data ?? cart.value) as CartSnapshot;
+        return true;
+      }
+      return false;
+    } finally {
+      submitting.value = false;
+    }
+  };
+
   return {
     cart, loading, submitting, loaded,
-    itemCount, subtotalUsd, serviceChargeUsd, itemsTotalUsd,
-    refresh, ensureLoaded, add, updateQty, remove, clear, reset,
+    itemCount, subtotalUsd, totalDiscountUsd, serviceChargeUsd, itemsTotalUsd, appliedCoupon,
+    refresh, ensureLoaded, add, updateQty, remove, clear, reset, applyCode, removeCode,
   };
 });
 

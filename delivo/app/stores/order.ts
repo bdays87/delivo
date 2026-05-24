@@ -36,9 +36,13 @@ export interface Order {
   ship_notes: string | null;
   status: OrderStatus;
   subtotal_usd: string;
+  total_buyer_discount_usd: string | null;
+  total_influencer_commission_usd: string | null;
   service_charge_usd: string;
   shipping_usd: string;
   total_usd: string;
+  applied_coupon_id: number | null;
+  applied_coupon_code: string | null;
   usd_to_zwg_rate: string | null;
   payment_reference: string;
   payment_confirmed_at: string | null;

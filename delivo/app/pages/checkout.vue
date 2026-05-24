@@ -136,10 +136,24 @@
           </li>
         </ul>
 
+        <div v-if="cart.appliedCoupon" class="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-success/40 bg-success/5 p-3 text-xs">
+          <div>
+            <div class="uppercase tracking-wider text-success">Code applied</div>
+            <div class="font-mono font-semibold">{{ cart.appliedCoupon.code }}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-semibold text-success">{{ cart.appliedCoupon.buyer_discount_pct }}% off</div>
+          </div>
+        </div>
+
         <dl class="mt-4 space-y-2 border-t border-base-300 pt-4 text-sm">
           <div class="flex justify-between">
-            <dt>Subtotal</dt>
+            <dt>{{ cart.totalDiscountUsd > 0 ? 'Subtotal (after code)' : 'Subtotal' }}</dt>
             <dd>{{ currency.format(cart.subtotalUsd) }}</dd>
+          </div>
+          <div v-if="cart.totalDiscountUsd > 0" class="flex justify-between text-success">
+            <dt>You saved</dt>
+            <dd>− {{ currency.format(cart.totalDiscountUsd) }}</dd>
           </div>
           <div class="flex justify-between">
             <dt>Service charge</dt>

@@ -80,6 +80,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('cart/items/{itemId}', [CartController::class, 'removeItem'])
             ->whereNumber('itemId')->name('v1.cart.items.remove');
         Route::delete('cart', [CartController::class, 'clear'])->name('v1.cart.clear');
+        Route::post('cart/coupon', [CartController::class, 'applyCoupon'])->name('v1.cart.coupon.apply');
+        Route::delete('cart/coupon', [CartController::class, 'removeCoupon'])->name('v1.cart.coupon.remove');
 
         Route::get('addresses', [AddressController::class, 'index'])->name('v1.addresses.index');
         Route::post('addresses', [AddressController::class, 'store'])->name('v1.addresses.store');

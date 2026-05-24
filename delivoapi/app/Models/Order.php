@@ -40,9 +40,13 @@ class Order extends Model
         'ship_notes',
         'status',
         'subtotal_usd',
+        'total_buyer_discount_usd',
+        'total_influencer_commission_usd',
         'service_charge_usd',
         'shipping_usd',
         'total_usd',
+        'applied_coupon_id',
+        'applied_coupon_code',
         'usd_to_zwg_rate',
         'payment_reference',
         'payment_confirmed_at',
@@ -53,6 +57,8 @@ class Order extends Model
     {
         return [
             'subtotal_usd' => 'decimal:2',
+            'total_buyer_discount_usd' => 'decimal:2',
+            'total_influencer_commission_usd' => 'decimal:2',
             'service_charge_usd' => 'decimal:2',
             'shipping_usd' => 'decimal:2',
             'total_usd' => 'decimal:2',

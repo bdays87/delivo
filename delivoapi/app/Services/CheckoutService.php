@@ -24,6 +24,7 @@ class CheckoutService
         private readonly IExchangeRateInterface $rates,
         private readonly PricingService $pricing,
         private readonly ShipmentAssignmentService $assigner,
+        private readonly CartCouponService $couponSvc,
     ) {}
 
     /**
@@ -107,14 +108,14 @@ class CheckoutService
             }
 
             $unit = $this->resolveUnitPrice($product, (int) $item->quantity);
-            $lineTotal = round($unit * $item->quantity, 2);
+            $lineGross = round($unit * $item->quantity, 2);
 
             $lines[] = [
                 'item' => $item,
                 'product' => $product,
                 'variant' => $variant,
                 'unit' => $unit,
-                'line_total' => $lineTotal,
+                'line_gross' => $lineGross,
             ];
         }
 
@@ -148,7 +149,36 @@ class CheckoutService
 
         $shipments = $shipmentResult['shipments'];
 
-        return DB::transaction(function () use ($user, $address, $wallet, $lines, $shipments) {
+        // Resolve the applied coupon — refusal here means the cart's stored
+        // code is no longer valid (item removed, etc.); it's been cleared.
+        $coupon = $this->couponSvc->resolveActive($cart);
+
+        return DB::transaction(function () use ($user, $address, $wallet, $lines, $shipments, $coupon) {
+            // Per-line discount snapshots — only the cart line tied to the
+            // coupon's product gets the buyer discount + influencer commission.
+            $totalDiscount = 0.0;
+            $totalCommission = 0.0;
+            foreach ($lines as $idx => $line) {
+                $applies = $coupon !== null
+                    && $coupon->product_id !== null
+                    && (int) $coupon->product_id === (int) $line['product']->id;
+                $buyerPct = $applies ? (float) $coupon->buyer_discount_pct : 0.0;
+                $commissionPct = $applies ? (float) $coupon->influencer_commission_pct : 0.0;
+                $lineDiscount = round((float) $line['line_gross'] * ($buyerPct / 100), 2);
+                $lineCommission = round((float) $line['line_gross'] * ($commissionPct / 100), 2);
+                $lineTotal = round((float) $line['line_gross'] - $lineDiscount, 2);
+
+                $lines[$idx]['line_discount'] = $lineDiscount;
+                $lines[$idx]['line_commission'] = $lineCommission;
+                $lines[$idx]['line_total'] = $lineTotal;
+                $lines[$idx]['buyer_pct'] = $buyerPct;
+                $lines[$idx]['commission_pct'] = $commissionPct;
+                $lines[$idx]['influencer_id'] = $applies ? $coupon->influencer_id : null;
+
+                $totalDiscount += $lineDiscount;
+                $totalCommission += $lineCommission;
+            }
+
             $subtotal = round(array_sum(array_column($lines, 'line_total')), 2);
             $serviceCharge = round($this->pricing->serviceChargeFor($subtotal), 2);
             $shipping = round(
@@ -168,6 +198,8 @@ class CheckoutService
                 'user_id' => $user->id,
                 'address_id' => $address->id,
                 'mobile_wallet_id' => $wallet->id,
+                'applied_coupon_id' => $coupon?->id,
+                'applied_coupon_code' => $coupon?->code,
                 'ship_recipient_name' => $address->recipient_name,
                 'ship_recipient_phone' => $address->recipient_phone,
                 'ship_city' => $address->city,
@@ -176,6 +208,8 @@ class CheckoutService
                 'ship_notes' => $address->notes,
                 'status' => Order::STATUS_PENDING_PAYMENT,
                 'subtotal_usd' => $subtotal,
+                'total_buyer_discount_usd' => round($totalDiscount, 2),
+                'total_influencer_commission_usd' => round($totalCommission, 2),
                 'service_charge_usd' => $serviceCharge,
                 'shipping_usd' => $shipping,
                 'total_usd' => $total,
@@ -189,16 +223,28 @@ class CheckoutService
                     'vendor_id' => $line['product']->vendor_id,
                     'product_id' => $line['product']->id,
                     'product_variant_id' => $line['variant']->id,
+                    'influencer_id' => $line['influencer_id'],
                     'product_name_snapshot' => $line['product']->name,
                     'color_snapshot' => $line['variant']->color,
                     'quantity' => $line['item']->quantity,
                     'unit_price_usd_snapshot' => $line['unit'],
+                    'buyer_discount_pct_snapshot' => $line['buyer_pct'],
+                    'line_discount_usd_snapshot' => $line['line_discount'],
+                    'influencer_commission_pct_snapshot' => $line['commission_pct'],
+                    'line_commission_usd_snapshot' => $line['line_commission'],
                     'line_total_usd_snapshot' => $line['line_total'],
                 ]);
 
                 $line['variant']->decrement('stock_quantity', (int) $line['item']->quantity);
 
                 $line['item']->delete();
+            }
+
+            // Bump coupon usage + clear from the cart row (the order owns its
+            // own snapshot from here on).
+            if ($coupon !== null) {
+                $coupon->increment('usage_count');
+                $cart->forceFill(['applied_coupon_code' => null])->save();
             }
 
             // Snapshot per-vendor shipments so admins and customers can audit

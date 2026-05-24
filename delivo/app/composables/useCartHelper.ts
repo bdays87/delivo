@@ -52,5 +52,23 @@ export const useCartHelper = () => {
     }
   };
 
-  return { getCart, addItem, updateItem, removeItem, clearCart };
+  const applyCoupon = async (code: string) => {
+    try {
+      const data = await client('/api/v1/cart/coupon', { method: 'POST', body: { code } });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  const removeCoupon = async () => {
+    try {
+      const data = await client('/api/v1/cart/coupon', { method: 'DELETE' });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  return { getCart, addItem, updateItem, removeItem, clearCart, applyCoupon, removeCoupon };
 };

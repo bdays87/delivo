@@ -80,8 +80,44 @@
 
       <aside class="h-fit rounded-3xl border border-base-300 bg-base-100 p-6">
         <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">Order summary</h2>
+
+        <div v-if="!cart.appliedCoupon" class="mt-4 rounded-2xl bg-base-200/40 p-3">
+          <div class="text-xs font-semibold opacity-70">Got an influencer code?</div>
+          <form class="mt-2 flex gap-2" @submit.prevent="onApplyCode">
+            <input
+              v-model="codeInput"
+              type="text"
+              placeholder="ENTER CODE"
+              class="input input-bordered input-sm w-full font-mono uppercase"
+              maxlength="40"
+            />
+            <button class="btn btn-primary btn-sm rounded-full" :disabled="!codeInput || cart.submitting">
+              Apply
+            </button>
+          </form>
+        </div>
+        <div v-else class="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-success/40 bg-success/5 p-3">
+          <div>
+            <div class="text-xs uppercase tracking-wider text-success">Code applied</div>
+            <div class="font-mono text-sm font-semibold">{{ cart.appliedCoupon.code }}</div>
+            <div class="text-xs opacity-60">
+              {{ cart.appliedCoupon.buyer_discount_pct }}% off your eligible line
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-xs rounded-full text-error" @click="cart.removeCode()">
+            <Icon name="lucide:x" class="h-3.5 w-3.5" /> Remove
+          </button>
+        </div>
+
         <dl class="mt-4 space-y-2 text-sm">
-          <div class="flex justify-between"><dt>Subtotal</dt><dd>{{ currency.format(cart.subtotalUsd) }}</dd></div>
+          <div class="flex justify-between">
+            <dt>{{ cart.totalDiscountUsd > 0 ? 'Subtotal (after code)' : 'Subtotal' }}</dt>
+            <dd>{{ currency.format(cart.subtotalUsd) }}</dd>
+          </div>
+          <div v-if="cart.totalDiscountUsd > 0" class="flex justify-between text-success">
+            <dt>You saved</dt>
+            <dd>− {{ currency.format(cart.totalDiscountUsd) }}</dd>
+          </div>
           <div class="flex justify-between">
             <dt>Service charge</dt>
             <dd>{{ currency.format(cart.serviceChargeUsd) }}</dd>
@@ -124,8 +160,24 @@ useHead({ title: 'Cart — Delivo' });
 const cart = useCartStore();
 const currency = useCurrencyStore();
 const router = useRouter();
+const route = useRoute();
 
-onMounted(() => cart.refresh());
+const codeInput = ref('');
+
+onMounted(async () => {
+  await cart.refresh();
+  // Allow ?ref=CODE auto-apply for influencer share links.
+  const ref = (route.query.ref as string | undefined)?.trim();
+  if (ref && !cart.appliedCoupon) {
+    await cart.applyCode(ref.toUpperCase());
+  }
+});
+
+const onApplyCode = async () => {
+  if (!codeInput.value.trim()) return;
+  const ok = await cart.applyCode(codeInput.value.trim().toUpperCase());
+  if (ok) codeInput.value = '';
+};
 
 const hasStockIssue = computed(() => cart.cart.items.some((l) => l.stock_warning));
 

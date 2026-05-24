@@ -3,19 +3,24 @@
 namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Customer\ApplyCouponRequest;
 use App\Http\Requests\Customer\CartItemRequest;
 use App\Http\Requests\Customer\CartItemUpdateRequest;
 use App\Http\Responses\ApiResponse;
 use App\Interfaces\Repositories\ICartInterface;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\CartCouponService;
 use App\Services\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
-    public function __construct(private readonly CartService $service) {}
+    public function __construct(
+        private readonly CartService $service,
+        private readonly CartCouponService $coupons,
+    ) {}
 
     public function show(Request $request): JsonResponse
     {
@@ -74,5 +79,30 @@ class CartController extends Controller
         $this->service->clear($cart);
 
         return ApiResponse::success($this->service->snapshot($cart->fresh()), 'Cart cleared.');
+    }
+
+    public function applyCoupon(ApplyCouponRequest $request): JsonResponse
+    {
+        $cart = $this->service->currentForUser($request->user());
+        $result = $this->coupons->apply($request->user(), $cart, $request->validated()['code']);
+        if (isset($result['error'])) {
+            return ApiResponse::error($result['error'], $result['code'] ?? 422);
+        }
+
+        return ApiResponse::success(
+            $this->service->snapshot($this->service->currentForUser($request->user())),
+            'Code applied.',
+        );
+    }
+
+    public function removeCoupon(Request $request): JsonResponse
+    {
+        $cart = $this->service->currentForUser($request->user());
+        $this->coupons->remove($cart);
+
+        return ApiResponse::success(
+            $this->service->snapshot($this->service->currentForUser($request->user())),
+            'Code removed.',
+        );
     }
 }

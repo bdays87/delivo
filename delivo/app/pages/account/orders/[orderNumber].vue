@@ -52,8 +52,28 @@
             <div class="font-semibold">{{ currency.format(i.line_total_usd_snapshot) }}</div>
           </li>
         </ul>
+        <div
+          v-if="store.current.applied_coupon_code"
+          class="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-success/40 bg-success/5 p-3 text-xs"
+        >
+          <div>
+            <div class="uppercase tracking-wider text-success">Code applied</div>
+            <div class="font-mono font-semibold">{{ store.current.applied_coupon_code }}</div>
+          </div>
+          <div v-if="Number(store.current.total_buyer_discount_usd) > 0" class="text-right font-semibold text-success">
+            − {{ currency.format(store.current.total_buyer_discount_usd) }}
+          </div>
+        </div>
+
         <dl class="mt-4 space-y-2 border-t border-base-300 pt-4 text-sm">
-          <div class="flex justify-between"><dt>Subtotal</dt><dd>{{ currency.format(store.current.subtotal_usd) }}</dd></div>
+          <div class="flex justify-between">
+            <dt>{{ Number(store.current.total_buyer_discount_usd) > 0 ? 'Subtotal (after code)' : 'Subtotal' }}</dt>
+            <dd>{{ currency.format(store.current.subtotal_usd) }}</dd>
+          </div>
+          <div v-if="Number(store.current.total_buyer_discount_usd) > 0" class="flex justify-between text-success">
+            <dt>You saved</dt>
+            <dd>− {{ currency.format(store.current.total_buyer_discount_usd) }}</dd>
+          </div>
           <div class="flex justify-between"><dt>Service charge</dt><dd>{{ currency.format(store.current.service_charge_usd) }}</dd></div>
           <div class="flex justify-between"><dt>Delivery</dt><dd>{{ currency.format(store.current.shipping_usd) }}</dd></div>
           <div class="flex justify-between border-t border-base-300 pt-2 font-bold">

@@ -15,6 +15,7 @@ class CartService
     public function __construct(
         private readonly ICartInterface $repo,
         private readonly PricingService $pricing,
+        private readonly CartCouponService $couponSvc,
     ) {}
 
     public function currentForUser(User $user): Cart
@@ -30,13 +31,29 @@ class CartService
     public function snapshot(Cart $cart): array
     {
         $cart = $this->repo->loadWithItems($cart);
+
+        // Re-resolve the applied code against the current cart contents. If
+        // the code no longer applies (item removed, archived, etc.), the
+        // resolver clears it from the cart.
+        $coupon = $this->couponSvc->resolveActive($cart);
+
         $lines = [];
         $subtotal = 0.0;
+        $totalDiscount = 0.0;
 
         foreach ($cart->items as $item) {
             $unit = $this->resolveUnitPrice($item->product, (int) $item->quantity);
-            $lineTotal = round($unit * $item->quantity, 2);
+            $lineGross = round($unit * $item->quantity, 2);
+
+            $applies = $coupon !== null
+                && $coupon->product_id !== null
+                && (int) $coupon->product_id === (int) $item->product_id;
+            $buyerPct = $applies ? (float) $coupon->buyer_discount_pct : 0.0;
+            $lineDiscount = round($lineGross * ($buyerPct / 100), 2);
+            $lineTotal = round($lineGross - $lineDiscount, 2);
+
             $subtotal += $lineTotal;
+            $totalDiscount += $lineDiscount;
 
             $lines[] = [
                 'id' => $item->id,
@@ -61,7 +78,10 @@ class CartService
                 ] : null,
                 'quantity' => $item->quantity,
                 'unit_price_usd' => number_format($unit, 2, '.', ''),
+                'line_gross_usd' => number_format($lineGross, 2, '.', ''),
+                'line_discount_usd' => number_format($lineDiscount, 2, '.', ''),
                 'line_total_usd' => number_format($lineTotal, 2, '.', ''),
+                'coupon_applies_to_line' => $applies,
                 'stock_warning' => $item->variant && $item->quantity > (int) $item->variant->stock_quantity,
             ];
         }
@@ -74,8 +94,17 @@ class CartService
             'items' => $lines,
             'item_count' => array_sum(array_column($lines, 'quantity')),
             'subtotal_usd' => number_format($subtotal, 2, '.', ''),
+            'total_discount_usd' => number_format($totalDiscount, 2, '.', ''),
             'service_charge_usd' => number_format($serviceCharge, 2, '.', ''),
             'items_total_usd' => number_format($itemsTotal, 2, '.', ''),
+            'applied_coupon' => $coupon ? [
+                'id' => $coupon->id,
+                'code' => $coupon->code,
+                'buyer_discount_pct' => (float) $coupon->buyer_discount_pct,
+                'influencer_commission_pct' => (float) $coupon->influencer_commission_pct,
+                'product_id' => $coupon->product_id,
+                'influencer_id' => $coupon->influencer_id,
+            ] : null,
             // Shipping is resolved at checkout once the customer picks an address.
             'shipping_note' => 'Delivery calculated at checkout based on delivery city.',
         ];

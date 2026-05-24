@@ -15,10 +15,15 @@ class OrderItem extends Model
         'vendor_id',
         'product_id',
         'product_variant_id',
+        'influencer_id',
         'product_name_snapshot',
         'color_snapshot',
         'quantity',
         'unit_price_usd_snapshot',
+        'buyer_discount_pct_snapshot',
+        'line_discount_usd_snapshot',
+        'influencer_commission_pct_snapshot',
+        'line_commission_usd_snapshot',
         'line_total_usd_snapshot',
     ];
 
@@ -27,6 +32,10 @@ class OrderItem extends Model
         return [
             'quantity' => 'integer',
             'unit_price_usd_snapshot' => 'decimal:2',
+            'buyer_discount_pct_snapshot' => 'decimal:2',
+            'line_discount_usd_snapshot' => 'decimal:2',
+            'influencer_commission_pct_snapshot' => 'decimal:2',
+            'line_commission_usd_snapshot' => 'decimal:2',
             'line_total_usd_snapshot' => 'decimal:2',
         ];
     }
@@ -49,5 +58,10 @@ class OrderItem extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
+    public function influencer(): BelongsTo
+    {
+        return $this->belongsTo(Influencer::class);
     }
 }
