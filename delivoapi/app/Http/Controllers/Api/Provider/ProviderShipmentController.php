@@ -69,7 +69,28 @@ class ProviderShipmentController extends Controller
 
     public function deliver(Request $request, int $shipmentId): JsonResponse
     {
-        return $this->transition($request, $shipmentId, 'deliver', 'Only out-for-delivery shipments can be delivered.');
+        $provider = $this->requireActiveProvider($request);
+        if ($provider instanceof JsonResponse) {
+            return $provider;
+        }
+        $shipment = $this->service->findForProvider($provider, $shipmentId);
+        if ($shipment === null) {
+            return ApiResponse::notFound('Shipment not found.');
+        }
+
+        $data = $request->validate([
+            'code' => ['required', 'string', 'min:4', 'max:10'],
+        ]);
+
+        $result = $this->service->deliver($shipment, (string) $data['code']);
+        if ($result === 'invalid_code') {
+            return ApiResponse::error('Delivery code is incorrect. Ask the customer to read it again.', 422);
+        }
+        if ($result === 'wrong_state') {
+            return ApiResponse::error('Only out-for-delivery shipments can be delivered.', 409);
+        }
+
+        return ApiResponse::success($shipment->fresh(['order', 'vendor', 'hub']), 'Shipment delivered.');
     }
 
     private function transition(Request $request, int $shipmentId, string $method, string $errorMessage): JsonResponse

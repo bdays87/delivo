@@ -1,11 +1,12 @@
 export const useVendorOrderHelper = () => {
   const client = useSanctumClient();
 
-  const listOrders = async (filter?: { status?: string; delivery_status?: string }) => {
+  const listOrders = async (filter?: { status?: string; delivery_status?: string; delivery_method?: string }) => {
     try {
       const params = new URLSearchParams();
       if (filter?.status) params.set('status', filter.status);
       if (filter?.delivery_status) params.set('delivery_status', filter.delivery_status);
+      if (filter?.delivery_method) params.set('delivery_method', filter.delivery_method);
       const qs = params.toString();
       const url = qs ? `/api/v1/vendor/me/orders?${qs}` : '/api/v1/vendor/me/orders';
       const data = await client(url, { method: 'GET' });
@@ -72,5 +73,17 @@ export const useVendorOrderHelper = () => {
     }
   };
 
-  return { listOrders, ordersSummary, listCoupons, couponsSummary, listCarts, listDropoffHubs, initiateDropoff };
+  const confirmSelfPickup = async (orderNumber: string, code: string) => {
+    try {
+      const data = await client(`/api/v1/vendor/me/orders/${orderNumber}/confirm-pickup`, {
+        method: 'POST',
+        body: { code },
+      });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  return { listOrders, ordersSummary, listCoupons, couponsSummary, listCarts, listDropoffHubs, initiateDropoff, confirmSelfPickup };
 };

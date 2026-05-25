@@ -103,8 +103,6 @@ Route::prefix('v1')->group(function () {
         Route::get('orders', [OrderController::class, 'index'])->name('v1.orders.index');
         Route::get('orders/{orderNumber}', [OrderController::class, 'show'])
             ->where('orderNumber', '[A-Z0-9-]+')->name('v1.orders.show');
-        Route::post('orders/{orderNumber}/confirm-delivery', [OrderController::class, 'confirmDelivery'])
-            ->where('orderNumber', '[A-Z0-9-]+')->name('v1.orders.confirm-delivery');
 
         // Influencer self-service
         Route::post('influencer/apply', [InfluencerController::class, 'apply'])->name('v1.influencer.apply');
@@ -164,6 +162,8 @@ Route::prefix('v1')->group(function () {
         Route::get('vendor/me/dropoff-hubs', [VendorOrderController::class, 'dropoffHubs'])->name('v1.vendor.dropoff-hubs');
         Route::post('vendor/me/shipments/{shipmentId}/initiate-dropoff', [VendorOrderController::class, 'initiateDropoff'])
             ->whereNumber('shipmentId')->name('v1.vendor.shipments.initiate-dropoff');
+        Route::post('vendor/me/orders/{orderNumber}/confirm-pickup', [VendorOrderController::class, 'confirmSelfPickup'])
+            ->where('orderNumber', '[A-Z0-9-]+')->name('v1.vendor.orders.confirm-pickup');
         Route::get('vendor/me/coupons', [VendorCouponController::class, 'index'])->name('v1.vendor.coupons.index');
         Route::get('vendor/me/coupons/summary', [VendorCouponController::class, 'summary'])->name('v1.vendor.coupons.summary');
         Route::post('vendor/me/kyc-documents', [VendorController::class, 'uploadKyc'])->name('v1.vendor.kyc.upload');

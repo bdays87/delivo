@@ -89,6 +89,18 @@ class OrderStatusService
             return;
         }
 
+        // Self-pickup has its own simple lifecycle — no shipments, no hub.
+        // PAID -> READY_FOR_PICKUP -> DELIVERED (once vendor confirms code).
+        if ($order->delivery_method === Order::METHOD_SELF_PICKUP) {
+            if ($order->customer_delivery_confirmed_at !== null) {
+                $this->setDeliveryStatus($order, Order::DELIVERY_DELIVERED);
+            } else {
+                $this->setDeliveryStatus($order, Order::DELIVERY_READY_FOR_PICKUP);
+            }
+
+            return;
+        }
+
         $shipments = $order->shipments;
         if ($shipments->isEmpty()) {
             $this->setDeliveryStatus($order, Order::DELIVERY_AWAITING_DROPOFF);
@@ -143,10 +155,22 @@ class OrderStatusService
         $order->forceFill(['delivery_status' => $delivery])->save();
     }
 
-    public function confirmDelivery(Order $order, string $code): array
+    /**
+     * Vendor confirms a self-pickup handover by entering the delivery code
+     * the customer reads aloud. Validates the code, marks the customer's
+     * receipt, and rolls the order's delivery_status to DELIVERED. Admin
+     * still has to close the order (consistent with home delivery).
+     */
+    public function confirmSelfPickup(Order $order, string $code): array
     {
-        if ($order->status !== Order::STATUS_PAID && $order->status !== Order::STATUS_OUT_FOR_DELIVERY) {
-            return ['error' => 'This order is not ready for delivery confirmation.', 'code' => 422];
+        if ($order->delivery_method !== Order::METHOD_SELF_PICKUP) {
+            return ['error' => 'This order is not a self-pickup order.', 'code' => 422];
+        }
+        if ($order->status !== Order::STATUS_PAID) {
+            return ['error' => 'Only paid orders can be picked up.', 'code' => 422];
+        }
+        if ($order->customer_delivery_confirmed_at !== null) {
+            return ['error' => 'This pickup was already confirmed.', 'code' => 422];
         }
         if ($order->delivery_code === null || $order->delivery_code === '') {
             return ['error' => 'No delivery code on file for this order.', 'code' => 422];
@@ -154,14 +178,11 @@ class OrderStatusService
         if (! hash_equals((string) $order->delivery_code, trim($code))) {
             return ['error' => 'Delivery code is incorrect.', 'code' => 422];
         }
-        if ($order->customer_delivery_confirmed_at !== null) {
-            return ['error' => 'You already confirmed delivery on this order.', 'code' => 422];
-        }
 
-        // Customer confirms receipt — this is a signal to Delivo admin, not
-        // the close-out itself. Admin still has to mark the order DELIVERED
-        // to release influencer earnings and finalise the order.
-        $order->forceFill(['customer_delivery_confirmed_at' => now()])->save();
+        DB::transaction(function () use ($order) {
+            $order->forceFill(['customer_delivery_confirmed_at' => now()])->save();
+            $this->recomputeDeliveryStatus($order->fresh('shipments'));
+        });
 
         return ['order' => $order->fresh(['items'])];
     }

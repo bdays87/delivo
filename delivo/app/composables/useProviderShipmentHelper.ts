@@ -13,9 +13,12 @@ export const useProviderShipmentHelper = () => {
     }
   };
 
-  const transition = async (id: number, action: 'pickup' | 'dispatch' | 'deliver') => {
+  const transition = async (id: number, action: 'pickup' | 'dispatch' | 'deliver', body?: Record<string, unknown>) => {
     try {
-      const data = await client(`/api/v1/provider/me/shipments/${id}/${action}`, { method: 'POST' });
+      const data = await client(`/api/v1/provider/me/shipments/${id}/${action}`, {
+        method: 'POST',
+        body: body ?? undefined,
+      });
       return { data: ref(data), status: ref(true), error: ref(null) };
     } catch (err) {
       return { data: ref(null), status: ref(false), error: ref(err) };

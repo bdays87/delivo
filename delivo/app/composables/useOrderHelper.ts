@@ -19,19 +19,7 @@ export const useOrderHelper = () => {
     }
   };
 
-  const confirmDelivery = async (orderNumber: string, code: string) => {
-    try {
-      const data = await client(`/api/v1/orders/${orderNumber}/confirm-delivery`, {
-        method: 'POST',
-        body: { code },
-      });
-      return { data: ref(data), status: ref(true), error: ref(null) };
-    } catch (err) {
-      return { data: ref(null), status: ref(false), error: ref(err) };
-    }
-  };
-
-  return { listOrders, getOrder, confirmDelivery };
+  return { listOrders, getOrder };
 };
 
 export const useAdminOrderHelper = () => {

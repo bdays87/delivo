@@ -108,7 +108,7 @@ type OrderStatus =
   | 'PENDING_PAYMENT' | 'PAID' | 'PICKED_UP' | 'OUT_FOR_DELIVERY'
   | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
 
-type DeliveryStatus = 'PENDING' | 'AWAITING_DROPOFF' | 'DROPOFF_INITIATED' | 'AWAITING_DISPATCH' | 'INROUTE' | 'DELIVERED';
+type DeliveryStatus = 'PENDING' | 'AWAITING_DROPOFF' | 'DROPOFF_INITIATED' | 'AWAITING_DISPATCH' | 'INROUTE' | 'READY_FOR_PICKUP' | 'DELIVERED';
 
 interface OrderRow {
   id: number;
@@ -218,6 +218,7 @@ const deliveryLabel = (s: DeliveryStatus) => ({
   DROPOFF_INITIATED: 'Dropoff in progress',
   AWAITING_DISPATCH: 'Awaiting dispatch',
   INROUTE: 'In route',
+  READY_FOR_PICKUP: 'Ready for pickup',
   DELIVERED: 'Delivered',
 }[s] ?? s);
 
@@ -227,6 +228,7 @@ const deliveryBadge = (s: DeliveryStatus) => ({
   DROPOFF_INITIATED: 'badge-info',
   AWAITING_DISPATCH: 'badge-info',
   INROUTE: 'badge-info',
+  READY_FOR_PICKUP: 'badge-warning',
   DELIVERED: 'badge-success',
 }[s] ?? 'badge-ghost');
 

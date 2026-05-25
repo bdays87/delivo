@@ -35,15 +35,22 @@ class Order extends Model
 
     public const DELIVERY_AWAITING_DISPATCH = 'AWAITING_DISPATCH';
 
+    public const DELIVERY_READY_FOR_PICKUP = 'READY_FOR_PICKUP';
+
     public const DELIVERY_INROUTE = 'INROUTE';
 
     public const DELIVERY_DELIVERED = 'DELIVERED';
+
+    public const METHOD_HOME_DELIVERY = 'HOME_DELIVERY';
+
+    public const METHOD_SELF_PICKUP = 'SELF_PICKUP';
 
     protected $fillable = [
         'order_number',
         'user_id',
         'address_id',
         'mobile_wallet_id',
+        'delivery_method',
         'ship_recipient_name',
         'ship_recipient_phone',
         'ship_city',

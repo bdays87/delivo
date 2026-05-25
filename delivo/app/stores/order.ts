@@ -35,7 +35,8 @@ export interface Order {
   ship_street: string;
   ship_notes: string | null;
   status: OrderStatus;
-  delivery_status: 'PENDING' | 'AWAITING_DROPOFF' | 'DROPOFF_INITIATED' | 'AWAITING_DISPATCH' | 'INROUTE' | 'DELIVERED';
+  delivery_status: 'PENDING' | 'AWAITING_DROPOFF' | 'DROPOFF_INITIATED' | 'AWAITING_DISPATCH' | 'INROUTE' | 'READY_FOR_PICKUP' | 'DELIVERED';
+  delivery_method: 'HOME_DELIVERY' | 'SELF_PICKUP';
   subtotal_usd: string;
   total_buyer_discount_usd: string | null;
   total_influencer_commission_usd: string | null;
@@ -49,10 +50,30 @@ export interface Order {
   delivery_code: string | null;
   payment_confirmed_at: string | null;
   delivered_at: string | null;
+  customer_delivery_confirmed_at: string | null;
   cancellation_reason: string | null;
   created_at: string;
   items?: OrderItem[];
+  shipments?: OrderShipment[];
   mobile_wallet?: OrderMobileWallet | null;
+}
+
+export interface OrderShipment {
+  id: number;
+  order_id: number;
+  vendor_id: number;
+  hub_name_snapshot: string | null;
+  hub_address_snapshot: string | null;
+  shipment_status: string;
+  dropoff_deadline: string | null;
+  dropoff_initiated_at: string | null;
+  dropped_off_at: string | null;
+  assigned_at: string | null;
+  picked_up_at: string | null;
+  out_for_delivery_at: string | null;
+  delivered_at: string | null;
+  vendor?: { id: number; business_name: string };
+  provider?: { id: number; business_name: string };
 }
 
 export const useOrderStore = defineStore('order', () => {

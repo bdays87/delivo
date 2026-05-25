@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Customer;
 
+use App\Models\Order;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CheckoutQuoteRequest extends FormRequest
 {
@@ -15,6 +17,10 @@ class CheckoutQuoteRequest extends FormRequest
     {
         return [
             'address_id' => ['required', 'integer', 'exists:addresses,id'],
+            'delivery_method' => ['nullable', 'string', Rule::in([
+                Order::METHOD_HOME_DELIVERY,
+                Order::METHOD_SELF_PICKUP,
+            ])],
         ];
     }
 }

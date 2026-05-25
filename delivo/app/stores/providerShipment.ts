@@ -65,10 +65,10 @@ export const useProviderShipmentStore = defineStore('providerShipment', () => {
     loading.value = false;
   };
 
-  const doTransition = async (id: number, action: 'pickup' | 'dispatch' | 'deliver'): Promise<boolean> => {
+  const doTransition = async (id: number, action: 'pickup' | 'dispatch' | 'deliver', body?: Record<string, unknown>): Promise<boolean> => {
     submitting.value = true;
     try {
-      const { status, error } = await transition(id, action);
+      const { status, error } = await transition(id, action, body);
       if (status?.value) {
         toast.success({ title: 'Updated', message: `Shipment ${action}.`, position: 'topRight', layout: 2 });
         await fetchAll(filterStatus.value ?? undefined);

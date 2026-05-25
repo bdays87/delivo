@@ -65,6 +65,7 @@
             <th class="text-right">Your net</th>
             <th>Status</th>
             <th>Delivery</th>
+            <th>Dropoff</th>
           </tr>
         </thead>
         <tbody>
@@ -97,22 +98,86 @@
             </td>
             <td>
               <span :class="['badge badge-sm', deliveryBadge(r.order?.delivery_status)]">{{ deliveryLabel(r.order?.delivery_status) }}</span>
-              <div v-if="canInitiate(r)" class="mt-1">
+            </td>
+            <td>
+              <template v-if="r.order?.delivery_method === 'SELF_PICKUP'">
                 <button
-                  class="btn btn-warning btn-xs rounded-full"
-                  @click="openDropoffModal(r)"
+                  v-if="canConfirmPickup(r)"
+                  class="btn btn-success btn-xs rounded-full"
+                  @click="openPickupModal(r)"
                 >
-                  Initiate dropoff
+                  Confirm pickup
                 </button>
-              </div>
-              <div v-else-if="r.shipment?.dropoff_initiated_at && !r.shipment?.dropped_off_at" class="mt-1 text-xs opacity-70">
-                Awaiting hub receipt
-              </div>
+                <span v-else-if="r.order?.delivery_status === 'DELIVERED'" class="badge badge-sm badge-success gap-1">
+                  <Icon name="lucide:check-circle" class="h-3 w-3" /> Picked up
+                </span>
+                <span v-else class="text-xs opacity-40">—</span>
+              </template>
+              <template v-else>
+                <div v-if="canInitiate(r)">
+                  <button
+                    class="btn btn-success btn-xs rounded-full"
+                    @click="openDropoffModal(r)"
+                  >
+                    Initiate dropoff
+                  </button>
+                </div>
+                <div v-else-if="r.shipment?.dropoff_initiated_at && !r.shipment?.dropped_off_at" class="flex flex-col gap-1">
+                  <span class="badge badge-sm badge-info gap-1">
+                    <Icon name="lucide:truck" class="h-3 w-3" /> In transit to hub
+                  </span>
+                  <span class="text-xs opacity-60">Hub will confirm receipt</span>
+                </div>
+                <div v-else-if="r.shipment?.dropped_off_at" class="flex flex-col gap-1">
+                  <span class="badge badge-sm badge-success gap-1">
+                    <Icon name="lucide:check-circle" class="h-3 w-3" /> Received at hub
+                  </span>
+                  <span class="text-xs opacity-60">{{ r.shipment.dropped_off_at?.slice(0, 10) }}</span>
+                </div>
+                <span v-else class="text-xs opacity-40">—</span>
+              </template>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <dialog ref="pickupDialog" class="modal">
+      <div class="modal-box max-w-md">
+        <h3 class="text-lg font-bold">Confirm customer pickup</h3>
+        <p class="mt-1 text-sm opacity-70">
+          Ask the customer to read out their delivery code for order
+          <span class="font-mono">{{ activePickupRow?.order?.order_number }}</span>.
+          Enter exactly what they read — this is their proof of receipt.
+        </p>
+
+        <label class="fieldset mt-4">
+          <span class="fieldset-legend">Delivery code</span>
+          <input
+            v-model="pickupCodeInput"
+            type="text"
+            inputmode="numeric"
+            placeholder="6-digit code"
+            class="input input-bordered w-full font-mono text-lg tracking-widest"
+            maxlength="6"
+          />
+        </label>
+        <p v-if="pickupError" class="mt-2 text-xs text-error">{{ pickupError }}</p>
+
+        <div class="modal-action">
+          <button class="btn rounded-full" @click="closePickupModal">Cancel</button>
+          <button
+            class="btn btn-primary rounded-full"
+            :disabled="!pickupCodeInput || confirmingPickup"
+            @click="submitPickup"
+          >
+            <span v-if="confirmingPickup" class="loading loading-spinner loading-xs"></span>
+            Confirm pickup
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
 
     <dialog ref="dropoffDialog" class="modal">
       <div class="modal-box max-w-md">
@@ -166,7 +231,7 @@ definePageMeta({ layout: 'vendor', middleware: ['auth'] });
 useHead({ title: 'Orders — Delivo Vendor' });
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
-type DeliveryStatus = 'PENDING' | 'AWAITING_DROPOFF' | 'DROPOFF_INITIATED' | 'AWAITING_DISPATCH' | 'INROUTE' | 'DELIVERED';
+type DeliveryStatus = 'PENDING' | 'AWAITING_DROPOFF' | 'DROPOFF_INITIATED' | 'AWAITING_DISPATCH' | 'INROUTE' | 'READY_FOR_PICKUP' | 'DELIVERED';
 
 interface OrderRow {
   id: number;
@@ -175,6 +240,7 @@ interface OrderRow {
     order_number: string;
     status: OrderStatus;
     delivery_status: DeliveryStatus;
+    delivery_method: 'HOME_DELIVERY' | 'SELF_PICKUP';
     ship_city: string;
     ship_suburb: string;
     customer_name: string | null;
@@ -209,8 +275,51 @@ interface SummaryRow {
   net_after_commission_usd: string;
 }
 
-const { listOrders, ordersSummary, listDropoffHubs, initiateDropoff } = useVendorOrderHelper();
+const { listOrders, ordersSummary, listDropoffHubs, initiateDropoff, confirmSelfPickup } = useVendorOrderHelper();
 const toast = useToast();
+
+const pickupDialog = ref<HTMLDialogElement | null>(null);
+const activePickupRow = ref<OrderRow | null>(null);
+const pickupCodeInput = ref('');
+const pickupError = ref('');
+const confirmingPickup = ref(false);
+
+const canConfirmPickup = (r: OrderRow) =>
+  r.order?.delivery_method === 'SELF_PICKUP'
+  && r.order?.status === 'PAID'
+  && r.order?.delivery_status === 'READY_FOR_PICKUP';
+
+const openPickupModal = (r: OrderRow) => {
+  activePickupRow.value = r;
+  pickupCodeInput.value = '';
+  pickupError.value = '';
+  pickupDialog.value?.showModal();
+};
+
+const closePickupModal = () => {
+  pickupDialog.value?.close();
+  activePickupRow.value = null;
+  pickupCodeInput.value = '';
+  pickupError.value = '';
+};
+
+const submitPickup = async () => {
+  if (!activePickupRow.value?.order || !pickupCodeInput.value.trim()) return;
+  confirmingPickup.value = true;
+  pickupError.value = '';
+  const { status, error } = await confirmSelfPickup(
+    activePickupRow.value.order.order_number,
+    pickupCodeInput.value.trim(),
+  );
+  if (status?.value) {
+    toast.success({ title: 'Pickup confirmed', message: 'Customer marked as received.', position: 'topRight', layout: 2 });
+    closePickupModal();
+    await fetchAll();
+  } else {
+    pickupError.value = (error?.value as any)?.data?.message || 'Could not confirm pickup.';
+  }
+  confirmingPickup.value = false;
+};
 
 interface DropoffHub { id: number; city: string; name: string | null; address: string | null }
 
@@ -263,10 +372,11 @@ const submitDropoff = async () => {
   initiating.value = false;
 };
 
-interface Tab { key: string; label: string; status?: OrderStatus; delivery_status?: DeliveryStatus }
+interface Tab { key: string; label: string; status?: OrderStatus; delivery_status?: DeliveryStatus; delivery_method?: 'HOME_DELIVERY' | 'SELF_PICKUP' }
 const tabs: Tab[] = [
   { key: 'all', label: 'All' },
   { key: 'awaiting_payment', label: 'Awaiting payment', status: 'PENDING_PAYMENT' },
+  { key: 'self_pickup', label: 'Self-pickup queue', delivery_method: 'SELF_PICKUP', delivery_status: 'READY_FOR_PICKUP' },
   { key: 'awaiting_dropoff', label: 'Awaiting dropoff', delivery_status: 'AWAITING_DROPOFF' },
   { key: 'dropoff_initiated', label: 'Dropoff in progress', delivery_status: 'DROPOFF_INITIATED' },
   { key: 'awaiting_dispatch', label: 'Awaiting dispatch', delivery_status: 'AWAITING_DISPATCH' },
@@ -290,7 +400,11 @@ const fetchAll = async () => {
   loading.value = true;
   const tab = tabs.find((t) => t.key === activeKey.value);
   const [{ data: list, error }, { data: sum }] = await Promise.all([
-    listOrders({ status: tab?.status, delivery_status: tab?.delivery_status }),
+    listOrders({
+      status: tab?.status,
+      delivery_status: tab?.delivery_status,
+      delivery_method: tab?.delivery_method,
+    }),
     ordersSummary(),
   ]);
   if (!error.value) {
@@ -337,6 +451,7 @@ const deliveryLabel = (s?: DeliveryStatus | null) => ({
   DROPOFF_INITIATED: 'Dropoff in progress',
   AWAITING_DISPATCH: 'Awaiting dispatch',
   INROUTE: 'In route',
+  READY_FOR_PICKUP: 'Ready for pickup',
   DELIVERED: 'Delivered',
 }[s as DeliveryStatus] ?? '—');
 
@@ -346,6 +461,7 @@ const deliveryBadge = (s?: DeliveryStatus | null) => ({
   DROPOFF_INITIATED: 'badge-info',
   AWAITING_DISPATCH: 'badge-info',
   INROUTE: 'badge-info',
+  READY_FOR_PICKUP: 'badge-warning',
   DELIVERED: 'badge-success',
 }[s as DeliveryStatus] ?? 'badge-ghost');
 </script>

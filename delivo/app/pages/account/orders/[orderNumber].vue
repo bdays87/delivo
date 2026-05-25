@@ -22,6 +22,38 @@
         </div>
       </div>
 
+      <section v-if="store.current.status !== 'PENDING_PAYMENT' && store.current.status !== 'CANCELLED'" class="rounded-3xl border border-base-300 bg-base-100 p-6">
+        <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">Delivery progress</h2>
+        <ol class="mt-5 grid gap-3 md:grid-cols-5">
+          <li
+            v-for="(step, idx) in deliverySteps"
+            :key="step.key"
+            :class="[
+              'rounded-2xl border-2 p-3 text-xs transition',
+              step.state === 'done' ? 'border-success/40 bg-success/5 text-success-content' : '',
+              step.state === 'active' ? 'border-primary bg-primary/5' : '',
+              step.state === 'todo' ? 'border-base-300 opacity-50' : '',
+            ]"
+          >
+            <div class="flex items-center gap-2">
+              <span
+                :class="[
+                  'grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold',
+                  step.state === 'done' ? 'bg-success text-success-content' : '',
+                  step.state === 'active' ? 'bg-primary text-primary-content' : '',
+                  step.state === 'todo' ? 'bg-base-300 text-base-content/50' : '',
+                ]"
+              >
+                <Icon v-if="step.state === 'done'" name="lucide:check" class="h-4 w-4" />
+                <span v-else>{{ idx + 1 }}</span>
+              </span>
+              <span class="text-xs font-semibold leading-tight">{{ step.label }}</span>
+            </div>
+            <div v-if="step.at" class="mt-1 text-[10px] opacity-70">{{ formatStep(step.at) }}</div>
+          </li>
+        </ol>
+      </section>
+
       <section
         v-if="store.current.status === 'PENDING_PAYMENT'"
         class="rounded-3xl border border-warning/40 bg-warning/5 p-5 text-sm"
@@ -43,41 +75,23 @@
       </section>
 
       <section
-        v-if="canConfirmDelivery"
+        v-if="showHandoverCode"
         class="rounded-3xl border border-info/40 bg-info/5 p-5 text-sm"
       >
         <div class="flex items-start gap-3">
-          <Icon name="lucide:package-check" class="h-5 w-5 text-info" />
+          <Icon name="lucide:key-round" class="h-5 w-5 text-info" />
           <div class="flex-1">
-            <div class="font-semibold">Confirm delivery</div>
-            <p class="mt-1 opacity-80">
-              When the rider arrives, share this code with them so they know it's the right
-              delivery. Then enter the code below to close out the order.
-            </p>
-            <div v-if="store.current.delivery_code" class="mt-3 inline-flex items-center gap-2 rounded-2xl border border-base-300 bg-base-100 px-4 py-2">
+            <div class="font-semibold">{{ handoverHeading }}</div>
+            <p class="mt-1 opacity-80">{{ handoverBlurb }}</p>
+            <div v-if="store.current.delivery_code" class="mt-3 inline-flex items-center gap-3 rounded-2xl border-2 border-info bg-base-100 px-5 py-3">
               <span class="text-xs uppercase tracking-wider opacity-60">Your code</span>
-              <span class="font-mono text-xl font-extrabold tracking-widest">{{ store.current.delivery_code }}</span>
+              <span class="font-mono text-3xl font-extrabold tracking-widest">{{ store.current.delivery_code }}</span>
             </div>
-            <form class="mt-3 flex flex-wrap gap-2" @submit.prevent="onConfirmDelivery">
-              <input
-                v-model="deliveryCodeInput"
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                placeholder="Enter code"
-                class="input input-bordered w-40 font-mono"
-                maxlength="6"
-              />
-              <button
-                type="submit"
-                class="btn btn-primary rounded-full"
-                :disabled="!deliveryCodeInput || confirming"
-              >
-                <span v-if="confirming" class="loading loading-spinner loading-xs"></span>
-                Confirm delivery
-              </button>
-            </form>
-            <p v-if="deliveryError" class="mt-2 text-xs text-error">{{ deliveryError }}</p>
+            <p class="mt-3 text-xs opacity-60">
+              Do not share this code online or with anyone else — only the
+              {{ store.current.delivery_method === 'SELF_PICKUP' ? 'vendor handing your parcel over' : 'rider delivering to you' }}
+              should hear it.
+            </p>
           </div>
         </div>
       </section>
@@ -165,33 +179,27 @@ definePageMeta({ middleware: ['auth'] });
 const route = useRoute();
 const store = useOrderStore();
 const currency = useCurrencyStore();
-const toast = useToast();
-const { confirmDelivery } = useOrderHelper();
 
 const orderNumber = computed(() => route.params.orderNumber as string);
 
-const deliveryCodeInput = ref('');
-const confirming = ref(false);
-const deliveryError = ref('');
-
-const canConfirmDelivery = computed(() =>
-  store.current && ['PAID', 'OUT_FOR_DELIVERY'].includes(store.current.status as string),
+// Show the handover code only between payment and customer-confirmed receipt.
+const showHandoverCode = computed(() =>
+  store.current
+  && store.current.status === 'PAID'
+  && store.current.customer_delivery_confirmed_at === null,
 );
 
-const onConfirmDelivery = async () => {
-  if (!deliveryCodeInput.value.trim()) return;
-  confirming.value = true;
-  deliveryError.value = '';
-  const { status, error } = await confirmDelivery(orderNumber.value, deliveryCodeInput.value.trim());
-  if (status?.value) {
-    toast.success({ title: 'Delivery confirmed', message: 'Thank you!', position: 'topRight', layout: 2 });
-    deliveryCodeInput.value = '';
-    await store.fetchOne(orderNumber.value);
-  } else {
-    deliveryError.value = (error?.value as any)?.data?.message || 'Could not confirm delivery.';
-  }
-  confirming.value = false;
-};
+const handoverHeading = computed(() =>
+  store.current?.delivery_method === 'SELF_PICKUP'
+    ? 'Collecting from the vendor'
+    : 'Your delivery code',
+);
+
+const handoverBlurb = computed(() =>
+  store.current?.delivery_method === 'SELF_PICKUP'
+    ? 'Read this code to the vendor when you collect your parcel — they will enter it to confirm handover.'
+    : 'When your rider arrives with your parcel, read this code to them — they will enter it to confirm delivery.',
+);
 
 onMounted(() => store.fetchOne(orderNumber.value));
 
@@ -225,8 +233,65 @@ const deliveryLabel = computed(() => ({
   DROPOFF_INITIATED: 'Delivery: parcel on its way to hub',
   AWAITING_DISPATCH: 'Delivery: at hub, awaiting dispatch',
   INROUTE: 'Delivery: in route',
+  READY_FOR_PICKUP: 'Ready to collect from vendor',
   DELIVERED: 'Delivery: delivered',
 }[store.current?.delivery_status as string] ?? ''));
+
+interface DeliveryStep { key: string; label: string; state: 'done' | 'active' | 'todo'; at: string | null }
+
+const minTimestamp = (key: keyof import('~/stores/order').OrderShipment): string | null => {
+  const stamps = (store.current?.shipments ?? [])
+    .map((s) => s[key])
+    .filter((v): v is string => typeof v === 'string' && v.length > 0);
+  if (!stamps.length) return null;
+  return stamps.reduce((a, b) => (a < b ? a : b));
+};
+
+const HOME_DELIVERY_ORDER = ['PENDING', 'AWAITING_DROPOFF', 'DROPOFF_INITIATED', 'AWAITING_DISPATCH', 'INROUTE', 'DELIVERED'] as const;
+const SELF_PICKUP_ORDER = ['PENDING', 'READY_FOR_PICKUP', 'DELIVERED'] as const;
+
+const deliverySteps = computed<DeliveryStep[]>(() => {
+  const ds = store.current?.delivery_status ?? 'PENDING';
+
+  if (store.current?.delivery_method === 'SELF_PICKUP') {
+    const idx = SELF_PICKUP_ORDER.indexOf(ds as typeof SELF_PICKUP_ORDER[number]);
+    const rows: { key: typeof SELF_PICKUP_ORDER[number]; label: string; at: string | null }[] = [
+      { key: 'READY_FOR_PICKUP', label: 'Order paid', at: store.current?.payment_confirmed_at ?? null },
+      { key: 'DELIVERED', label: 'Picked up by you', at: store.current?.customer_delivery_confirmed_at ?? null },
+    ];
+    return rows.map((r) => {
+      const stepIdx = SELF_PICKUP_ORDER.indexOf(r.key);
+      let state: DeliveryStep['state'];
+      if (idx > stepIdx) state = 'done';
+      else if (idx === stepIdx) state = 'active';
+      else state = 'todo';
+      return { ...r, state };
+    });
+  }
+
+  const idx = HOME_DELIVERY_ORDER.indexOf(ds as typeof HOME_DELIVERY_ORDER[number]);
+  const rows: { key: typeof HOME_DELIVERY_ORDER[number]; label: string; at: string | null }[] = [
+    { key: 'AWAITING_DROPOFF', label: 'Order paid', at: store.current?.payment_confirmed_at ?? null },
+    { key: 'DROPOFF_INITIATED', label: 'Vendor heading to hub', at: minTimestamp('dropoff_initiated_at') },
+    { key: 'AWAITING_DISPATCH', label: 'Received at hub', at: minTimestamp('dropped_off_at') },
+    { key: 'INROUTE', label: 'Out for delivery', at: minTimestamp('out_for_delivery_at') },
+    { key: 'DELIVERED', label: 'Delivered', at: minTimestamp('delivered_at') },
+  ];
+
+  return rows.map((r) => {
+    const stepIdx = HOME_DELIVERY_ORDER.indexOf(r.key);
+    let state: DeliveryStep['state'];
+    if (idx > stepIdx) state = 'done';
+    else if (idx === stepIdx) state = 'active';
+    else state = 'todo';
+    return { ...r, state };
+  });
+});
+
+const formatStep = (iso: string): string => {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+};
 
 const deliveryBadge = computed(() => ({
   PENDING: 'badge-ghost',
@@ -234,6 +299,7 @@ const deliveryBadge = computed(() => ({
   DROPOFF_INITIATED: 'badge-info',
   AWAITING_DISPATCH: 'badge-info',
   INROUTE: 'badge-info',
+  READY_FOR_PICKUP: 'badge-warning',
   DELIVERED: 'badge-success',
 }[store.current?.delivery_status as string] ?? 'badge-ghost'));
 

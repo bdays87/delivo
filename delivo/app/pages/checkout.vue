@@ -15,8 +15,41 @@
     <div v-else class="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
       <div class="space-y-6">
         <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
+          <h2 class="text-lg font-bold">Delivery method</h2>
+          <p class="mt-1 text-sm opacity-70">
+            How would you like to receive your order?
+          </p>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <label
+              :class="[
+                'flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-4 transition',
+                deliveryMethod === 'HOME_DELIVERY' ? 'border-primary bg-primary/5' : 'border-base-300 bg-base-100 hover:border-primary/50',
+              ]"
+            >
+              <input v-model="deliveryMethod" type="radio" value="HOME_DELIVERY" class="radio radio-primary mt-1" />
+              <div>
+                <div class="font-semibold">Home delivery</div>
+                <div class="text-xs opacity-70">A rider brings it to your door. Delivery fee calculated below.</div>
+              </div>
+            </label>
+            <label
+              :class="[
+                'flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-4 transition',
+                deliveryMethod === 'SELF_PICKUP' ? 'border-primary bg-primary/5' : 'border-base-300 bg-base-100 hover:border-primary/50',
+              ]"
+            >
+              <input v-model="deliveryMethod" type="radio" value="SELF_PICKUP" class="radio radio-primary mt-1" />
+              <div>
+                <div class="font-semibold">Collect from vendor</div>
+                <div class="text-xs opacity-70">Pick up in person. No delivery fee.</div>
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
           <div class="flex items-start justify-between gap-3">
-            <h2 class="text-lg font-bold">Delivery address</h2>
+            <h2 class="text-lg font-bold">{{ deliveryMethod === 'SELF_PICKUP' ? 'Your contact details' : 'Delivery address' }}</h2>
             <button class="btn btn-ghost btn-sm rounded-full" @click="showAddForm = !showAddForm">
               <Icon name="lucide:plus" class="h-4 w-4" />
               Add new
@@ -283,6 +316,7 @@ const placing = ref(false);
 const showAddForm = ref(false);
 const selectedAddressId = ref<number | null>(null);
 const selectedWalletId = ref<number | null>(null);
+const deliveryMethod = ref<'HOME_DELIVERY' | 'SELF_PICKUP'>('HOME_DELIVERY');
 const mobileWallets = ref<MobileWallet[]>([]);
 const errorMessage = ref('');
 const quote = ref<Quote | null>(null);
@@ -319,10 +353,14 @@ watch(selectedAddressId, async (next) => {
   else quote.value = null;
 });
 
+watch(deliveryMethod, async () => {
+  if (selectedAddressId.value) await refreshQuote();
+});
+
 const refreshQuote = async () => {
   if (!selectedAddressId.value) return;
   quoteLoading.value = true;
-  const { data, status } = await quoteOrder(selectedAddressId.value);
+  const { data, status } = await quoteOrder(selectedAddressId.value, deliveryMethod.value);
   if (status?.value) {
     const payload = (data.value as any)?.data;
     quote.value = payload ? {
@@ -357,12 +395,13 @@ const fetchWallets = async () => {
   }
 };
 
-const canPlace = computed(() =>
-  !!selectedAddressId.value && !!selectedWalletId.value
-  && cart.cart.items.length > 0
-  && !cart.cart.items.some((l) => l.stock_warning)
-  && quote.value?.is_covered === true,
-);
+const canPlace = computed(() => {
+  if (!selectedAddressId.value || !selectedWalletId.value) return false;
+  if (!cart.cart.items.length) return false;
+  if (cart.cart.items.some((l) => l.stock_warning)) return false;
+  if (deliveryMethod.value === 'SELF_PICKUP') return true;
+  return quote.value?.is_covered === true;
+});
 
 const saveNewAddress = async () => {
   if (!form.recipient_name || !form.recipient_phone) return;
@@ -389,7 +428,7 @@ const onPlaceOrder = async () => {
   errorMessage.value = '';
   placing.value = true;
   try {
-    const { data, status, error } = await placeOrder(selectedAddressId.value, selectedWalletId.value);
+    const { data, status, error } = await placeOrder(selectedAddressId.value, selectedWalletId.value, deliveryMethod.value);
     if (status?.value) {
       const order = (data.value as any)?.data;
       cart.reset();

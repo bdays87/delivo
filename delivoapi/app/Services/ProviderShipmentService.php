@@ -60,13 +60,40 @@ class ProviderShipmentService
         return $this->transition($shipment, OrderDeliveryShipment::STATUS_PICKED_UP, OrderDeliveryShipment::STATUS_OUT_FOR_DELIVERY, 'out_for_delivery_at');
     }
 
-    public function deliver(OrderDeliveryShipment $shipment): bool
+    /**
+     * Rider records the customer-read delivery code as proof of handover.
+     * Returns one of: 'ok' (delivered), 'invalid_code', 'wrong_state'.
+     */
+    public function deliver(OrderDeliveryShipment $shipment, string $code): string
     {
-        // Note: this only marks the shipment delivered + recomputes the order's
-        // delivery_status (handled inside transition). The order itself is NOT
-        // flipped to DELIVERED here — only the admin's mark-delivered action
-        // does that, which also clears influencer earnings.
-        return $this->transition($shipment, OrderDeliveryShipment::STATUS_OUT_FOR_DELIVERY, OrderDeliveryShipment::STATUS_DELIVERED, 'delivered_at');
+        $order = $shipment->order;
+        if ($order === null) {
+            return 'wrong_state';
+        }
+        if ($order->delivery_code === null || $order->delivery_code === '') {
+            return 'invalid_code';
+        }
+        if (! hash_equals((string) $order->delivery_code, trim($code))) {
+            return 'invalid_code';
+        }
+        if ($shipment->shipment_status !== OrderDeliveryShipment::STATUS_OUT_FOR_DELIVERY) {
+            return 'wrong_state';
+        }
+
+        $ok = $this->transition(
+            $shipment,
+            OrderDeliveryShipment::STATUS_OUT_FOR_DELIVERY,
+            OrderDeliveryShipment::STATUS_DELIVERED,
+            'delivered_at',
+        );
+        if (! $ok) {
+            return 'wrong_state';
+        }
+
+        // Customer's receipt is implicit when the rider enters the right code.
+        $order->forceFill(['customer_delivery_confirmed_at' => now()])->save();
+
+        return 'ok';
     }
 
     private function transition(OrderDeliveryShipment $shipment, string $from, string $to, string $timestampField): bool

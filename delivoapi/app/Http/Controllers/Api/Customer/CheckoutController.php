@@ -15,9 +15,11 @@ class CheckoutController extends Controller
 
     public function quote(CheckoutQuoteRequest $request): JsonResponse
     {
+        $data = $request->validated();
         $result = $this->service->quote(
             $request->user(),
-            (int) $request->validated()['address_id'],
+            (int) $data['address_id'],
+            (string) ($data['delivery_method'] ?? 'HOME_DELIVERY'),
         );
 
         if (isset($result['error'])) {
@@ -29,10 +31,12 @@ class CheckoutController extends Controller
 
     public function place(CheckoutRequest $request): JsonResponse
     {
+        $data = $request->validated();
         $result = $this->service->place(
             $request->user(),
-            (int) $request->validated()['address_id'],
-            (int) $request->validated()['mobile_wallet_id'],
+            (int) $data['address_id'],
+            (int) $data['mobile_wallet_id'],
+            (string) ($data['delivery_method'] ?? 'HOME_DELIVERY'),
         );
 
         if (isset($result['error'])) {

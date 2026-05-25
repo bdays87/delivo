@@ -35,11 +35,11 @@ class VendorOrderService
         Order::STATUS_COMPLETED,
     ];
 
-    public function listForVendor(Vendor $vendor, ?string $status = null, ?string $deliveryStatus = null): array
+    public function listForVendor(Vendor $vendor, ?string $status = null, ?string $deliveryStatus = null, ?string $deliveryMethod = null): array
     {
         $query = OrderItem::query()
             ->with([
-                'order:id,order_number,status,delivery_status,ship_city,ship_suburb,payment_confirmed_at,delivered_at,created_at,user_id',
+                'order:id,order_number,status,delivery_status,delivery_method,ship_city,ship_suburb,payment_confirmed_at,delivered_at,created_at,user_id',
                 'order.user:id,name',
                 'order.shipments:id,order_id,vendor_id,hub_id,hub_name_snapshot,hub_address_snapshot,dropoff_initiated_at,dropped_off_at',
                 'product:id,name,slug',
@@ -47,7 +47,7 @@ class VendorOrderService
                 'influencer:id,display_name,slug',
             ])
             ->where('vendor_id', $vendor->id)
-            ->whereHas('order', function ($q) use ($status, $deliveryStatus) {
+            ->whereHas('order', function ($q) use ($status, $deliveryStatus, $deliveryMethod) {
                 if ($status !== null && $status !== '') {
                     $q->where('status', $status);
                 } else {
@@ -55,6 +55,9 @@ class VendorOrderService
                 }
                 if ($deliveryStatus !== null && $deliveryStatus !== '') {
                     $q->where('delivery_status', $deliveryStatus);
+                }
+                if ($deliveryMethod !== null && $deliveryMethod !== '') {
+                    $q->where('delivery_method', $deliveryMethod);
                 }
             })
             ->orderByDesc('id');
@@ -77,6 +80,34 @@ class VendorOrderService
                 'address' => $z->hub_address,
             ])
             ->all();
+    }
+
+    /**
+     * Self-pickup handover. Vendor enters the code the customer reads aloud;
+     * the system validates it against order.delivery_code, then marks the
+     * customer's receipt. Admin still has to close out the order to release
+     * influencer earnings (consistent with the home-delivery rider flow).
+     */
+    public function confirmSelfPickup(Vendor $vendor, string $orderNumber, string $code): array
+    {
+        $order = Order::query()
+            ->with('items', 'shipments')
+            ->where('order_number', $orderNumber)
+            ->first();
+
+        if ($order === null) {
+            return ['error' => 'Order not found.', 'code' => 404];
+        }
+
+        $vendorHasItem = OrderItem::query()
+            ->where('order_id', $order->id)
+            ->where('vendor_id', $vendor->id)
+            ->exists();
+        if (! $vendorHasItem) {
+            return ['error' => 'This order has no items from your store.', 'code' => 403];
+        }
+
+        return app(OrderStatusService::class)->confirmSelfPickup($order, $code);
     }
 
     public function initiateDropoff(Vendor $vendor, int $shipmentId, int $hubId): array
@@ -280,6 +311,7 @@ class VendorOrderService
                 'order_number' => $order->order_number,
                 'status' => $order->status,
                 'delivery_status' => $order->delivery_status,
+                'delivery_method' => $order->delivery_method,
                 'ship_city' => $order->ship_city,
                 'ship_suburb' => $order->ship_suburb,
                 'customer_name' => $order->user?->name,

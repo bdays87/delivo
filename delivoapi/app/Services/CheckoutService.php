@@ -31,7 +31,7 @@ class CheckoutService
      * Live breakdown for the user's cart against a chosen delivery address.
      * Stock is NOT validated here — that's place-order's job.
      */
-    public function quote(User $user, int $addressId): array
+    public function quote(User $user, int $addressId, string $deliveryMethod = Order::METHOD_HOME_DELIVERY): array
     {
         $cart = $this->carts->loadWithItems($this->carts->findOrCreateForUser($user->id));
         if ($cart->items->isEmpty()) {
@@ -53,14 +53,32 @@ class CheckoutService
         }
         $subtotal = round($subtotal, 2);
 
-        return ['quote' => $this->pricing->quote($cart, $subtotal, $address)];
+        if ($deliveryMethod === Order::METHOD_SELF_PICKUP) {
+            $serviceCharge = round($this->pricing->serviceChargeFor($subtotal), 2);
+
+            return ['quote' => [
+                'subtotal_usd' => number_format($subtotal, 2, '.', ''),
+                'service_charge_usd' => number_format($serviceCharge, 2, '.', ''),
+                'shipping_usd' => '0.00',
+                'is_covered' => true,
+                'items_total_usd' => number_format($subtotal + $serviceCharge, 2, '.', ''),
+                'total_usd' => number_format($subtotal + $serviceCharge, 2, '.', ''),
+                'shipments' => [],
+                'delivery_method' => Order::METHOD_SELF_PICKUP,
+            ]];
+        }
+
+        return ['quote' => array_merge(
+            $this->pricing->quote($cart, $subtotal, $address),
+            ['delivery_method' => Order::METHOD_HOME_DELIVERY],
+        )];
     }
 
     /**
      * Place an order from the user's cart. Hard-blocks on stock-out OR on any
      * uncovered shipment (vendor city has no hub, no route, no fee band).
      */
-    public function place(User $user, int $addressId, int $mobileWalletId): array
+    public function place(User $user, int $addressId, int $mobileWalletId, string $deliveryMethod = Order::METHOD_HOME_DELIVERY): array
     {
         $cart = $this->carts->loadWithItems($this->carts->findOrCreateForUser($user->id));
         if ($cart->items->isEmpty()) {
@@ -127,33 +145,38 @@ class CheckoutService
             ];
         }
 
-        // Coverage + per-vendor shipment fees. Recomputed server-side at
-        // place-time; the client breakdown is for display only.
-        $shipmentResult = $this->pricing->shipmentsForCart($cart, $address);
-        if (! $shipmentResult['all_covered']) {
-            $uncovered = collect($shipmentResult['shipments'])
-                ->where('is_covered', false)
-                ->pluck('reason')
-                ->filter()
-                ->unique()
-                ->implode(' · ');
+        // Self-pickup short-circuits the shipping flow — no coverage check,
+        // no shipments, no fees. Customer collects from the vendor.
+        if ($deliveryMethod === Order::METHOD_SELF_PICKUP) {
+            $shipments = [];
+        } else {
+            // Coverage + per-vendor shipment fees. Recomputed server-side at
+            // place-time; the client breakdown is for display only.
+            $shipmentResult = $this->pricing->shipmentsForCart($cart, $address);
+            if (! $shipmentResult['all_covered']) {
+                $uncovered = collect($shipmentResult['shipments'])
+                    ->where('is_covered', false)
+                    ->pluck('reason')
+                    ->filter()
+                    ->unique()
+                    ->implode(' · ');
 
-            return [
-                'error' => $uncovered !== ''
-                    ? $uncovered
-                    : 'We cannot deliver some items to this address.',
-                'code' => 422,
-                'shipments' => $shipmentResult['shipments'],
-            ];
+                return [
+                    'error' => $uncovered !== ''
+                        ? $uncovered
+                        : 'We cannot deliver some items to this address.',
+                    'code' => 422,
+                    'shipments' => $shipmentResult['shipments'],
+                ];
+            }
+            $shipments = $shipmentResult['shipments'];
         }
-
-        $shipments = $shipmentResult['shipments'];
 
         // Resolve the applied coupon — refusal here means the cart's stored
         // code is no longer valid (item removed, etc.); it's been cleared.
         $coupon = $this->couponSvc->resolveActive($cart);
 
-        return DB::transaction(function () use ($user, $cart, $address, $wallet, $lines, $shipments, $coupon) {
+        return DB::transaction(function () use ($user, $cart, $address, $wallet, $lines, $shipments, $coupon, $deliveryMethod) {
             // Per-line discount snapshots — only the cart line tied to the
             // coupon's product gets the buyer discount + influencer commission.
             $totalDiscount = 0.0;
@@ -198,6 +221,7 @@ class CheckoutService
                 'user_id' => $user->id,
                 'address_id' => $address->id,
                 'mobile_wallet_id' => $wallet->id,
+                'delivery_method' => $deliveryMethod,
                 'applied_coupon_id' => $coupon?->id,
                 'applied_coupon_code' => $coupon?->code,
                 'ship_recipient_name' => $address->recipient_name,

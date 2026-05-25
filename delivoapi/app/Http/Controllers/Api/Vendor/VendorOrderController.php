@@ -28,6 +28,7 @@ class VendorOrderController extends Controller
                 $vendor,
                 $request->query('status'),
                 $request->query('delivery_status'),
+                $request->query('delivery_method'),
             ),
             'Vendor orders retrieved successfully.',
         );
@@ -89,5 +90,24 @@ class VendorOrderController extends Controller
         }
 
         return ApiResponse::success($result['shipment'], 'Dropoff initiated.');
+    }
+
+    public function confirmSelfPickup(Request $request, string $orderNumber): JsonResponse
+    {
+        $vendor = $this->vendors->currentForUser($request->user());
+        if ($vendor === null) {
+            return ApiResponse::notFound('No vendor profile on file.');
+        }
+
+        $data = $request->validate([
+            'code' => ['required', 'string', 'min:4', 'max:10'],
+        ]);
+
+        $result = $this->orders->confirmSelfPickup($vendor, $orderNumber, (string) $data['code']);
+        if (isset($result['error'])) {
+            return ApiResponse::error($result['error'], $result['code']);
+        }
+
+        return ApiResponse::success($result['order'], 'Pickup confirmed.');
     }
 }

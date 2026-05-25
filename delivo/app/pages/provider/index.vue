@@ -105,7 +105,7 @@
               v-if="s.shipment_status === 'OUT_FOR_DELIVERY'"
               class="btn btn-success btn-sm rounded-full"
               :disabled="store.submitting"
-              @click="store.doTransition(s.id, 'deliver')"
+              @click="onDeliver(s.id)"
             >
               <Icon name="lucide:check" class="h-3.5 w-3.5" /> Delivered
             </button>
@@ -136,6 +136,12 @@ const tabs: { label: string; value: ShipmentStatus | null }[] = [
 ];
 
 onMounted(() => store.fetchAll());
+
+const onDeliver = async (id: number) => {
+  const code = window.prompt('Ask the customer to read their delivery code. Enter it exactly:');
+  if (!code || !code.trim()) return;
+  await store.doTransition(id, 'deliver', { code: code.trim() });
+};
 
 const labelFor = (s: ShipmentStatus): string => ({
   AWAITING_PROVIDER: 'Awaiting provider',
