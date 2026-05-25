@@ -3,7 +3,11 @@ export interface VendorDashboardSummary {
   active_products: number;
   pending_products: number;
   total_orders: number;
+  pending_payment_orders: number;
+  delivered_orders: number;
   total_sales_usd: string;
+  commission_paid_usd: string;
+  net_after_commission_usd: string;
   orders_available: boolean;
 }
 

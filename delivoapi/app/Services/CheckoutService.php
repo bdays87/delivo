@@ -153,7 +153,7 @@ class CheckoutService
         // code is no longer valid (item removed, etc.); it's been cleared.
         $coupon = $this->couponSvc->resolveActive($cart);
 
-        return DB::transaction(function () use ($user, $address, $wallet, $lines, $shipments, $coupon) {
+        return DB::transaction(function () use ($user, $cart, $address, $wallet, $lines, $shipments, $coupon) {
             // Per-line discount snapshots — only the cart line tied to the
             // coupon's product gets the buyer discount + influencer commission.
             $totalDiscount = 0.0;

@@ -31,7 +31,9 @@ use App\Http\Controllers\Api\Provider\ProviderController;
 use App\Http\Controllers\Api\Provider\ProviderShipmentController;
 use App\Http\Controllers\Api\VehicleTypeController;
 use App\Http\Controllers\Api\Vendor\VendorController;
+use App\Http\Controllers\Api\Vendor\VendorCouponController;
 use App\Http\Controllers\Api\Vendor\VendorDashboardController;
+use App\Http\Controllers\Api\Vendor\VendorOrderController;
 use App\Http\Controllers\Api\Vendor\VendorPayoutAccountController;
 use App\Http\Controllers\Api\Vendor\VendorProductController;
 use App\Http\Controllers\Api\VendorPublicController;
@@ -154,6 +156,12 @@ Route::prefix('v1')->group(function () {
         Route::post('vendor/apply', [VendorController::class, 'apply'])->name('v1.vendor.apply');
         Route::get('vendor/me', [VendorController::class, 'currentVendor'])->name('v1.vendor.me');
         Route::get('vendor/me/dashboard', [VendorDashboardController::class, 'show'])->name('v1.vendor.dashboard');
+
+        // Vendor visibility — orders, coupons, influencer attribution.
+        Route::get('vendor/me/orders', [VendorOrderController::class, 'index'])->name('v1.vendor.orders.index');
+        Route::get('vendor/me/orders/summary', [VendorOrderController::class, 'summary'])->name('v1.vendor.orders.summary');
+        Route::get('vendor/me/coupons', [VendorCouponController::class, 'index'])->name('v1.vendor.coupons.index');
+        Route::get('vendor/me/coupons/summary', [VendorCouponController::class, 'summary'])->name('v1.vendor.coupons.summary');
         Route::post('vendor/me/kyc-documents', [VendorController::class, 'uploadKyc'])->name('v1.vendor.kyc.upload');
 
         // Vendor payout accounts (one vendor → many accounts; ZWG + USD + mobile wallets)

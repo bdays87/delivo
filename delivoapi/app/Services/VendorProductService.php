@@ -89,16 +89,10 @@ class VendorProductService
                 'affiliate_buyer_discount_pct' => $data['affiliate_buyer_discount_pct'] ?? 0,
             ];
 
-            if ($product->status === Product::STATUS_ACTIVE) {
-                $attrs['status'] = Product::STATUS_PENDING;
-                $attrs['submitted_at'] = now();
-            } elseif ($product->status === Product::STATUS_REJECTED) {
-                $attrs['status'] = Product::STATUS_PENDING;
-                $attrs['submitted_at'] = now();
-                $attrs['rejection_reason'] = null;
-                $attrs['rejected_at'] = null;
-            }
-
+            // Vendors self-publish edits — an ACTIVE product stays ACTIVE on
+            // update. REJECTED products keep their status until the vendor
+            // explicitly hits the resubmit endpoint (where they signal they've
+            // addressed the rejection reason).
             $this->products->update($product->id, $attrs);
 
             $this->tiers->syncForProduct($product->id, $data['price_tiers']);

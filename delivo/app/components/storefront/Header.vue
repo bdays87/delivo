@@ -36,6 +36,7 @@
             <li class="menu-title">{{ auth.user?.email }}</li>
             <li><NuxtLink to="/account">My account</NuxtLink></li>
             <li><NuxtLink to="/account/orders">My orders</NuxtLink></li>
+            <li v-if="isActiveInfluencer"><NuxtLink to="/influencer">Influencer dashboard</NuxtLink></li>
             <li><button @click="handleLogout">Sign out</button></li>
           </ul>
         </div>
@@ -208,6 +209,7 @@
           <div class="mt-3 flex flex-wrap gap-2">
             <NuxtLink to="/account" class="btn btn-xs btn-ghost rounded-full bg-base-100" @click="closeMenu">My account</NuxtLink>
             <NuxtLink to="/account/orders" class="btn btn-xs btn-ghost rounded-full bg-base-100" @click="closeMenu">My orders</NuxtLink>
+            <NuxtLink v-if="isActiveInfluencer" to="/influencer" class="btn btn-xs btn-ghost rounded-full bg-base-100" @click="closeMenu">Influencer dashboard</NuxtLink>
             <button class="btn btn-xs btn-ghost rounded-full bg-base-100 text-error" @click="handleLogoutAndClose">Sign out</button>
           </div>
         </div>
@@ -224,8 +226,11 @@
 const auth = useAuthStore();
 const categoryStore = useCategoryStore();
 const cart = useCartStore();
+const influencer = useInfluencerStore();
 const route = useRoute();
 const router = useRouter();
+
+const isActiveInfluencer = computed(() => influencer.influencer?.status === 'ACTIVE');
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -261,14 +266,19 @@ const categoryFilterLabel = computed(() => {
 
 onMounted(() => {
   categoryStore.fetchActive();
-  if (auth.isAuthenticated) cart.ensureLoaded();
+  if (auth.isAuthenticated) {
+    cart.ensureLoaded();
+    influencer.fetchCurrent();
+  }
 });
 
 watch(() => auth.isAuthenticated, (loggedIn) => {
   if (loggedIn) {
     cart.refresh(true);
+    influencer.fetchCurrent();
   } else {
     cart.reset();
+    influencer.influencer = null;
   }
 });
 

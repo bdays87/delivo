@@ -10,7 +10,10 @@ class VendorDashboardService
 {
     private const LOW_STOCK_THRESHOLD = 5;
 
-    public function __construct(private readonly VendorProductService $products) {}
+    public function __construct(
+        private readonly VendorProductService $products,
+        private readonly VendorOrderService $orders,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -18,8 +21,9 @@ class VendorDashboardService
     public function build(Vendor $vendor): array
     {
         $catalog = $this->products->listForVendor($vendor, null);
+        $orderSummary = $this->orders->summary($vendor);
 
-        $summary = $this->buildSummary($catalog);
+        $summary = $this->buildSummary($catalog, $orderSummary);
         $stock = $this->buildStockSummary($catalog);
         $topMoving = $this->buildTopMoving($catalog);
         $stockByProduct = $this->buildStockByProduct($catalog);
@@ -36,7 +40,7 @@ class VendorDashboardService
      * @param  Collection<int, Product>  $catalog
      * @return array<string, mixed>
      */
-    private function buildSummary(Collection $catalog): array
+    private function buildSummary(Collection $catalog, array $orderSummary): array
     {
         $byStatus = $catalog->groupBy('status')->map->count();
 
@@ -44,9 +48,13 @@ class VendorDashboardService
             'total_products' => $catalog->count(),
             'active_products' => (int) ($byStatus[Product::STATUS_ACTIVE] ?? 0),
             'pending_products' => (int) ($byStatus[Product::STATUS_PENDING] ?? 0),
-            'total_orders' => 0,
-            'total_sales_usd' => '0.00',
-            'orders_available' => false,
+            'total_orders' => (int) $orderSummary['paid_count'],
+            'pending_payment_orders' => (int) $orderSummary['pending_payment_count'],
+            'delivered_orders' => (int) $orderSummary['delivered_count'],
+            'total_sales_usd' => $orderSummary['gross_revenue_usd'],
+            'commission_paid_usd' => $orderSummary['influencer_commission_paid_usd'],
+            'net_after_commission_usd' => $orderSummary['net_after_commission_usd'],
+            'orders_available' => true,
         ];
     }
 
