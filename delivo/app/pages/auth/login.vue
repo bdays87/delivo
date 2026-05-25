@@ -22,7 +22,7 @@
       <div class="rounded-3xl border border-base-300 bg-base-100 p-6 text-sm">
         <div class="font-semibold">New to Delivo?</div>
         <p class="mt-1 opacity-70">Create an account and we'll deliver from local vendors anywhere in Zimbabwe.</p>
-        <NuxtLink to="/auth/register" class="mt-3 inline-flex text-primary font-semibold">
+        <NuxtLink :to="registerLink" class="mt-3 inline-flex text-primary font-semibold">
           Create an account →
         </NuxtLink>
       </div>
@@ -78,7 +78,7 @@
 
       <p class="mt-6 text-center text-sm opacity-70 lg:hidden">
         New here?
-        <NuxtLink to="/auth/register" class="font-semibold text-primary">Create an account</NuxtLink>
+        <NuxtLink :to="registerLink" class="font-semibold text-primary">Create an account</NuxtLink>
       </p>
     </div>
   </div>
@@ -89,6 +89,18 @@ definePageMeta({ layout: 'default' });
 useHead({ title: 'Sign in — Delivo' });
 
 const auth = useAuthStore();
+const route = useRoute();
+
+const redirectTo = computed(() => {
+  const q = route.query.redirect;
+  return typeof q === 'string' ? q : null;
+});
+
+const registerLink = computed(() =>
+  redirectTo.value
+    ? { path: '/auth/register', query: { redirect: redirectTo.value } }
+    : { path: '/auth/register' },
+);
 
 const form = reactive({ email: '', password: '' });
 const errors = reactive({ email: '', password: '' });
@@ -106,7 +118,7 @@ const handleSubmit = async () => {
   try {
     submitting.value = true;
     const valid = await LoginSchema.validate(form, { abortEarly: false });
-    await auth.login(valid);
+    await auth.login(valid, redirectTo.value);
   } catch (err: any) {
     if (err?.inner?.length) {
       err.inner.forEach((e: any) => {

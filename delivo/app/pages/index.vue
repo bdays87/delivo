@@ -17,7 +17,6 @@
     </section>
 
     <StorefrontHero />
-    <StorefrontAudienceCards />
 
     <StorefrontTopProducts />
     <StorefrontVendorGrid />

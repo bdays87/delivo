@@ -119,6 +119,39 @@
 
         <div class="mx-1 h-6 w-px shrink-0 bg-base-300" aria-hidden="true" />
 
+        <div class="dropdown dropdown-bottom shrink-0">
+          <button
+            type="button"
+            tabindex="0"
+            class="btn btn-ghost btn-sm gap-2 rounded-full"
+          >
+            <Icon name="lucide:compass" class="h-4 w-4" />
+            What can you do on Delivo?
+            <Icon name="lucide:chevron-down" class="h-3.5 w-3.5 opacity-60" />
+          </button>
+          <ul
+            tabindex="0"
+            class="dropdown-content menu z-50 mt-1 w-80 rounded-box bg-base-100 p-2 shadow-lg"
+          >
+            <li v-for="item in whatYouCanDo" :key="item.id">
+              <NuxtLink :to="item.to" class="flex items-start gap-3 rounded-xl">
+                <span
+                  class="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+                  :class="item.iconBg"
+                >
+                  <Icon :name="item.icon" class="h-4 w-4" />
+                </span>
+                <span class="flex flex-col gap-0.5">
+                  <span class="text-sm font-semibold leading-tight">{{ item.title }}</span>
+                  <span class="text-xs leading-snug opacity-65">{{ item.summary }}</span>
+                </span>
+              </NuxtLink>
+            </li>
+          </ul>
+        </div>
+
+        <div class="mx-1 h-6 w-px shrink-0 bg-base-300" aria-hidden="true" />
+
         <nav class="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto" aria-label="Main">
           <NuxtLink
             v-for="link in navLinks"
@@ -188,6 +221,32 @@
           </NuxtLink>
         </nav>
 
+        <div>
+          <p class="px-1 text-xs font-semibold uppercase tracking-wider text-base-content/50">
+            What can you do on Delivo?
+          </p>
+          <div class="mt-2 flex flex-col gap-1">
+            <NuxtLink
+              v-for="item in whatYouCanDo"
+              :key="`m-wycd-${item.id}`"
+              :to="item.to"
+              class="flex items-start gap-3 rounded-xl border border-base-200 bg-base-100 p-2.5 transition hover:border-primary/30 hover:bg-base-200/50"
+              @click="closeMenu"
+            >
+              <span
+                class="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+                :class="item.iconBg"
+              >
+                <Icon :name="item.icon" class="h-4 w-4" />
+              </span>
+              <span class="flex flex-col gap-0.5">
+                <span class="text-sm font-semibold leading-tight">{{ item.title }}</span>
+                <span class="text-xs leading-snug opacity-65">{{ item.summary }}</span>
+              </span>
+            </NuxtLink>
+          </div>
+        </div>
+
         <div class="flex flex-wrap items-center gap-2">
           <NuxtLink
             v-if="!auth.isAuthenticated"
@@ -236,10 +295,61 @@ const navLinks = [
   { label: 'Home', to: '/' },
   { label: 'Browse products', to: '/products' },
   { label: 'Browse vendors', to: '/#vendors' },
-  { label: 'Become a Customer', to: '/auth/register' },
-  { label: 'Become a Vender', to: '/vendor/apply' },
+  { label: 'Become a Vendor', to: '/vendor/apply' },
   { label: 'Fleet owners', to: '/providers/apply' },
   { label: 'Social Media Influencers', to: '/influencers/apply' },
+];
+
+interface WhatYouCanDoItem {
+  id: string;
+  title: string;
+  summary: string;
+  icon: string;
+  iconBg: string;
+  to: string;
+}
+
+const whatYouCanDo: WhatYouCanDoItem[] = [
+  {
+    id: 'shoppers',
+    title: 'Shop & get delivered',
+    summary: 'Order from local vendors, delivered anywhere in Zimbabwe.',
+    icon: 'lucide:shopping-bag',
+    iconBg: 'bg-primary/15 text-primary',
+    to: '/about/shoppers',
+  },
+  {
+    id: 'sellers',
+    title: 'Sell on Delivo',
+    summary: 'Reach customers nationwide — we handle delivery for you.',
+    icon: 'lucide:store',
+    iconBg: 'bg-primary/15 text-primary',
+    to: '/about/sellers',
+  },
+  {
+    id: 'parcels',
+    title: 'Send parcels',
+    summary: 'Tracked door-to-door courier runs across major cities.',
+    icon: 'lucide:package',
+    iconBg: 'bg-info/15 text-info',
+    to: '/about/parcels',
+  },
+  {
+    id: 'fleet',
+    title: 'Deliver as a fleet',
+    summary: 'Plug your fleet into Delivo orders and earn per delivery.',
+    icon: 'lucide:truck',
+    iconBg: 'bg-success/15 text-success',
+    to: '/about/providers',
+  },
+  {
+    id: 'influencers',
+    title: 'Earn as an influencer',
+    summary: 'Promote commission products and earn from every sale.',
+    icon: 'lucide:megaphone',
+    iconBg: 'bg-accent/25 text-accent-content',
+    to: '/about/influencers',
+  },
 ];
 
 const cartCount = computed(() => cart.itemCount);

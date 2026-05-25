@@ -23,7 +23,7 @@
       <div class="rounded-3xl border border-base-300 bg-base-100 p-6 text-sm">
         <div class="font-semibold">Already a member?</div>
         <p class="mt-1 opacity-70">Sign in and pick up where you left off.</p>
-        <NuxtLink to="/auth/login" class="mt-3 inline-flex text-primary font-semibold">
+        <NuxtLink :to="loginLink" class="mt-3 inline-flex text-primary font-semibold">
           Sign in →
         </NuxtLink>
       </div>
@@ -118,7 +118,7 @@
 
       <p class="mt-6 text-center text-sm opacity-70 lg:hidden">
         Already a member?
-        <NuxtLink to="/auth/login" class="font-semibold text-primary">Sign in</NuxtLink>
+        <NuxtLink :to="loginLink" class="font-semibold text-primary">Sign in</NuxtLink>
       </p>
     </div>
   </div>
@@ -129,6 +129,18 @@ definePageMeta({ layout: 'default' });
 useHead({ title: 'Create account — Delivo' });
 
 const auth = useAuthStore();
+const route = useRoute();
+
+const redirectTo = computed(() => {
+  const q = route.query.redirect;
+  return typeof q === 'string' ? q : null;
+});
+
+const loginLink = computed(() =>
+  redirectTo.value
+    ? { path: '/auth/login', query: { redirect: redirectTo.value } }
+    : { path: '/auth/login' },
+);
 
 const form = reactive({
   name: '',
@@ -169,9 +181,10 @@ const handleSubmit = async () => {
   try {
     submitting.value = true;
     const valid = await RegisterSchema.validate(form, { abortEarly: false });
-    await auth.register(valid);
+    await auth.register(valid, redirectTo.value);
     // auth.register() already navigates to the role-appropriate landing
-    // (customers → /, vendors → /vendor, admins → /admin).
+    // (customers → /, vendors → /vendor, admins → /admin) — or to
+    // `?redirect=` when set (e.g. from a "Become a vendor" CTA).
   } catch (err: any) {
     if (err?.inner?.length) {
       err.inner.forEach((e: any) => {

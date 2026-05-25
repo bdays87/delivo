@@ -15,7 +15,25 @@
       review and approve your application — usually within one working day.
     </p>
 
-    <div v-if="vendorStore.vendor" class="mt-8 space-y-6">
+    <StorefrontCreateAccountGate
+      v-if="!auth.isAuthenticated"
+      role-label="seller"
+      icon="lucide:store"
+      icon-bg="bg-primary/15 text-primary"
+      benefits-title="What you get as a seller"
+      :benefits="[
+        'List products and reach customers across Zimbabwe',
+        'Get paid via mobile money or bank transfer',
+        'No need to run your own delivery or website',
+      ]"
+      :steps="[
+        { title: 'Create a free customer account', detail: 'Used to sign in and manage your store.' },
+        { title: 'Submit your seller application', detail: 'Business name, contact details and payout method.' },
+        { title: 'Upload your national ID', detail: 'Quick admin review — usually under a working day.' },
+      ]"
+    />
+
+    <div v-else-if="vendorStore.vendor" class="mt-8 space-y-6">
       <div class="rounded-3xl border border-base-300 bg-base-100 p-6">
         <div class="flex items-center gap-3">
           <span class="grid h-10 w-10 place-items-center rounded-2xl bg-primary/10 text-primary">
@@ -228,10 +246,10 @@ import type { Vendor } from '~/stores/vendor';
 
 definePageMeta({
   layout: 'default',
-  middleware: ['auth'],
 });
 useHead({ title: 'Become a seller — Delivo' });
 
+const auth = useAuthStore();
 const vendorStore = useVendorStore();
 const walletStore = useMobileWalletStore();
 const coverage = useCoverageStore();
@@ -262,8 +280,10 @@ const kycError = ref<string | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 
 onMounted(() => {
-  vendorStore.fetchCurrent();
-  walletStore.fetchActive();
+  if (auth.isAuthenticated) {
+    vendorStore.fetchCurrent();
+    walletStore.fetchActive();
+  }
   coverage.ensureLoaded();
 });
 

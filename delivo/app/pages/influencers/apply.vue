@@ -13,8 +13,26 @@
       add your social handles, and our team will review and activate your account.
     </p>
 
+    <StorefrontCreateAccountGate
+      v-if="!auth.isAuthenticated"
+      role-label="influencer"
+      icon="lucide:megaphone"
+      icon-bg="bg-accent/25 text-accent-content"
+      benefits-title="What you get as an influencer"
+      :benefits="[
+        'Browse vendor products paying affiliate commission',
+        'Share your unique code across your channels',
+        'Earn a cut on every sale made through your link',
+      ]"
+      :steps="[
+        { title: 'Create a free customer account', detail: 'Used to sign in and track your earnings.' },
+        { title: 'Submit your influencer application', detail: 'Channel name, niche, and contact details.' },
+        { title: 'Add your social handles', detail: 'Admins review handles before activating your account.' },
+      ]"
+    />
+
     <!-- After application: dashboard sections -->
-    <div v-if="store.influencer" class="mt-8 space-y-6">
+    <div v-else-if="store.influencer" class="mt-8 space-y-6">
       <div class="rounded-3xl border border-base-300 bg-base-100 p-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-3">
@@ -159,9 +177,10 @@
 <script setup lang="ts">
 import { InfluencerApplySchema } from '~/utils/InfluencerSchemas';
 
-definePageMeta({ layout: 'default', middleware: ['auth'] });
+definePageMeta({ layout: 'default' });
 useHead({ title: 'Promote on Delivo' });
 
+const auth = useAuthStore();
 const store = useInfluencerStore();
 
 const form = reactive({
@@ -186,7 +205,9 @@ const handleForm = reactive<{
   followers: null,
 });
 
-onMounted(() => store.fetchCurrent());
+onMounted(() => {
+  if (auth.isAuthenticated) store.fetchCurrent();
+});
 
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
 const prevName = ref('');

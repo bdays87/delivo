@@ -1,5 +1,5 @@
 <template>
-  <section id="products" class="scroll-mt-24 bg-base-200 py-16">
+  <section id="products" class="scroll-mt-24 border-t border-base-300 bg-base-100 py-16">
     <div class="mx-auto w-full max-w-[1600px] px-4 md:px-6 lg:px-8">
       <div class="mb-8 flex items-end justify-between">
         <div>

@@ -13,8 +13,26 @@
       coverage, and our team will activate your account.
     </p>
 
+    <StorefrontCreateAccountGate
+      v-if="!auth.isAuthenticated"
+      role-label="fleet partner"
+      icon="lucide:truck"
+      icon-bg="bg-success/15 text-success"
+      benefits-title="What you get as a fleet partner"
+      :benefits="[
+        'Plug your trucks, vans and bikes into Delivo orders',
+        'Pick the cities and routes you cover',
+        'Get paid for every delivered shipment',
+      ]"
+      :steps="[
+        { title: 'Create a free customer account', detail: 'Used to sign in and manage your fleet.' },
+        { title: 'Submit your fleet application', detail: 'Business details, base city, and vehicle types.' },
+        { title: 'Upload KYC documents', detail: 'National ID, driver\'s licence and vehicle registration.' },
+      ]"
+    />
+
     <!-- After application: dashboard sections -->
-    <div v-if="store.provider" class="mt-8 space-y-6">
+    <div v-else-if="store.provider" class="mt-8 space-y-6">
       <div class="rounded-3xl border border-base-300 bg-base-100 p-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-3">
@@ -295,11 +313,12 @@
 import { DeliveryProviderApplySchema } from '~/utils/DeliveryProviderSchemas';
 import type { ProviderRoute } from '~/stores/provider';
 
-definePageMeta({ layout: 'default', middleware: ['auth'] });
+definePageMeta({ layout: 'default' });
 useHead({ title: 'Deliver on Delivo' });
 
 interface VehicleType { id: number; name: string; icon: string; }
 
+const auth = useAuthStore();
 const store = useProviderStore();
 const coverage = useCoverageStore();
 const { listActive: listVehicleTypes } = useVehicleTypeHelper();
@@ -325,7 +344,10 @@ const vehicleTypes = ref<VehicleType[]>([]);
 const routes = ref<ProviderRoute[]>([]);
 
 onMounted(async () => {
-  await Promise.all([store.fetchCurrent(), coverage.ensureLoaded(), fetchVehicleTypes()]);
+  const tasks: Promise<unknown>[] = [coverage.ensureLoaded(), fetchVehicleTypes()];
+  if (auth.isAuthenticated) tasks.push(store.fetchCurrent());
+  await Promise.all(tasks);
+
   if (store.provider?.coverage_areas) {
     selectedZoneIds.value = new Set(store.provider.coverage_areas.map((c) => c.id));
   }

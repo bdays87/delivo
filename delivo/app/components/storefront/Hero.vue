@@ -6,152 +6,150 @@
     @mouseenter="pauseAutoplay"
     @mouseleave="resumeAutoplay"
   >
-    <div class="absolute -top-24 -right-20 h-80 w-80 rounded-full bg-primary/15 blur-3xl"></div>
-    <div class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-secondary/15 blur-3xl"></div>
+    <div class="pointer-events-none absolute -top-24 -right-20 h-80 w-80 rounded-full bg-primary/15 blur-3xl"></div>
+    <div class="pointer-events-none absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-secondary/15 blur-3xl"></div>
 
-    <!-- Carousel viewport: full width, fixed height -->
-    <div class="relative h-[min(82vh,720px)] min-h-[520px] w-full sm:min-h-[560px]">
-      <div class="h-full w-full overflow-hidden">
-        <div
-          class="flex h-full transition-transform duration-700 ease-out"
-          :style="{ transform: `translateX(-${active * 100}%)` }"
-        >
-          <article
-            v-for="(slide, index) in slides"
-            :key="slide.id"
-            class="relative h-full min-w-full shrink-0 grow-0 basis-full"
-            :class="index === active ? 'z-10' : 'pointer-events-none'"
-            :aria-hidden="index !== active"
-          >
-            <!-- Full-bleed background image -->
-            <img
-              :src="slide.image"
-              :alt="slide.imageAlt"
-              class="absolute inset-0 h-full w-full object-cover"
-              :style="{ objectPosition: slide.imagePosition }"
-              :loading="index === 0 ? 'eager' : 'lazy'"
-            />
-            <div
-              class="pointer-events-none absolute inset-0 bg-gradient-to-r from-base-100/95 via-base-100/75 to-base-100/25 md:from-base-100/92 md:via-base-100/55 md:to-transparent"
-            ></div>
-
-            <!-- Content overlay -->
-            <div class="relative z-10 mx-auto flex h-full max-w-7xl items-center px-4 py-12 md:px-8 md:py-16">
-              <div class="max-w-xl">
-                <div class="badge badge-lg gap-2 border-base-300/80 bg-base-100/90 px-4 py-3 font-medium backdrop-blur-sm">
-                  <Icon :name="slide.badgeIcon" class="h-4 w-4 text-primary" />
-                  {{ slide.badge }}
-                </div>
-                <h1 class="mt-5 text-3xl font-extrabold leading-[1.08] tracking-tight md:text-5xl lg:text-6xl">
-                  {{ slide.title }}
-                  <span v-if="slide.titleAccent" class="text-primary">{{ slide.titleAccent }}</span>
-                </h1>
-                <p class="mt-4 max-w-lg text-base opacity-80 md:text-lg">
-                  {{ slide.description }}
-                </p>
-                <div class="mt-8 flex flex-wrap gap-3">
-                  <a
-                    v-if="isHashLink(slide.ctaTo)"
-                    :href="slide.ctaTo"
-                    class="btn btn-primary btn-lg rounded-full px-7"
-                    @click.prevent="followLink(slide.ctaTo)"
-                  >
-                    {{ slide.ctaLabel }}
-                    <Icon name="lucide:arrow-right" class="h-4 w-4" />
-                  </a>
-                  <NuxtLink
-                    v-else
-                    :to="slide.ctaTo"
-                    class="btn btn-primary btn-lg rounded-full px-7"
-                  >
-                    {{ slide.ctaLabel }}
-                    <Icon name="lucide:arrow-right" class="h-4 w-4" />
-                  </NuxtLink>
-
-                  <template v-if="slide.secondaryCta">
-                    <a
-                      v-if="isHashLink(slide.secondaryCta.to)"
-                      :href="slide.secondaryCta.to"
-                      class="btn btn-outline btn-lg rounded-full border-base-300 bg-base-100/80 px-7 backdrop-blur-sm"
-                      @click.prevent="followLink(slide.secondaryCta.to)"
-                    >
-                      {{ slide.secondaryCta.label }}
-                    </a>
-                    <NuxtLink
-                      v-else
-                      :to="slide.secondaryCta.to"
-                      class="btn btn-outline btn-lg rounded-full border-base-300 bg-base-100/80 px-7 backdrop-blur-sm"
-                    >
-                      {{ slide.secondaryCta.label }}
-                    </NuxtLink>
-                  </template>
-                </div>
-              </div>
-
+    <div class="relative mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8 lg:px-8">
+      <div class="grid gap-5 lg:grid-cols-3 lg:gap-6">
+        <!-- Carousel: 2/3 -->
+        <div class="lg:col-span-2">
+          <div class="relative h-[min(58vh,460px)] min-h-[340px] w-full overflow-hidden rounded-3xl shadow-sm sm:min-h-[380px]">
+            <div class="h-full w-full">
               <div
-                v-if="slide.floating"
-                class="absolute bottom-8 right-4 hidden max-w-[220px] rounded-2xl bg-base-100/95 p-4 shadow-xl backdrop-blur md:right-8 md:block lg:right-12"
+                class="flex h-full transition-transform duration-700 ease-out"
+                :style="{ transform: `translateX(-${active * 100}%)` }"
               >
-                <div class="flex items-center gap-3">
-                  <span
-                    class="grid h-10 w-10 place-items-center rounded-xl"
-                    :class="slide.floating.iconBg"
-                  >
-                    <Icon :name="slide.floating.icon" class="h-5 w-5" />
-                  </span>
-                  <div>
-                    <div class="text-sm font-semibold">{{ slide.floating.title }}</div>
-                    <div class="text-xs opacity-60">{{ slide.floating.subtitle }}</div>
+                <article
+                  v-for="(slide, index) in slides"
+                  :key="slide.id"
+                  class="relative h-full min-w-full shrink-0 grow-0 basis-full"
+                  :class="index === active ? 'z-10' : 'pointer-events-none'"
+                  :aria-hidden="index !== active"
+                >
+                  <img
+                    :src="slide.image"
+                    :alt="slide.imageAlt"
+                    class="absolute inset-0 h-full w-full object-cover"
+                    :style="{ objectPosition: slide.imagePosition }"
+                    :loading="index === 0 ? 'eager' : 'lazy'"
+                  />
+                  <div
+                    class="pointer-events-none absolute inset-0 bg-gradient-to-r from-base-100/95 via-base-100/75 to-base-100/25 md:from-base-100/92 md:via-base-100/60 md:to-transparent"
+                  ></div>
+
+                  <div class="relative z-10 flex h-full items-center px-5 py-6 md:px-9 md:py-9">
+                    <div class="max-w-md">
+                      <div class="badge gap-2 border-base-300/80 bg-base-100/90 px-3 py-2.5 text-xs font-medium backdrop-blur-sm sm:badge-lg sm:text-sm">
+                        <Icon :name="slide.badgeIcon" class="h-4 w-4 text-primary" />
+                        {{ slide.badge }}
+                      </div>
+                      <h1 class="mt-3 text-2xl font-extrabold leading-[1.1] tracking-tight md:text-4xl lg:text-[2.5rem]">
+                        {{ slide.title }}
+                        <span v-if="slide.titleAccent" class="text-primary">{{ slide.titleAccent }}</span>
+                      </h1>
+                      <p class="mt-3 max-w-md text-sm opacity-80 md:text-base">
+                        {{ slide.description }}
+                      </p>
+                      <div class="mt-5 flex flex-wrap gap-2.5">
+                        <a
+                          v-if="isHashLink(slide.ctaTo)"
+                          :href="slide.ctaTo"
+                          class="btn btn-primary rounded-full px-5 sm:btn-md md:px-6"
+                          @click.prevent="followLink(slide.ctaTo)"
+                        >
+                          {{ slide.ctaLabel }}
+                          <Icon name="lucide:arrow-right" class="h-4 w-4" />
+                        </a>
+                        <NuxtLink
+                          v-else
+                          :to="slide.ctaTo"
+                          class="btn btn-primary rounded-full px-5 sm:btn-md md:px-6"
+                        >
+                          {{ slide.ctaLabel }}
+                          <Icon name="lucide:arrow-right" class="h-4 w-4" />
+                        </NuxtLink>
+
+                        <template v-if="slide.secondaryCta">
+                          <a
+                            v-if="isHashLink(slide.secondaryCta.to)"
+                            :href="slide.secondaryCta.to"
+                            class="btn btn-outline rounded-full border-base-300 bg-base-100/80 px-5 backdrop-blur-sm sm:btn-md md:px-6"
+                            @click.prevent="followLink(slide.secondaryCta.to)"
+                          >
+                            {{ slide.secondaryCta.label }}
+                          </a>
+                          <NuxtLink
+                            v-else
+                            :to="slide.secondaryCta.to"
+                            class="btn btn-outline rounded-full border-base-300 bg-base-100/80 px-5 backdrop-blur-sm sm:btn-md md:px-6"
+                          >
+                            {{ slide.secondaryCta.label }}
+                          </NuxtLink>
+                        </template>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </article>
               </div>
             </div>
-          </article>
+
+          </div>
+
+          <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <button
+              v-for="(slide, index) in slides"
+              :key="`dot-${slide.id}`"
+              type="button"
+              class="group flex items-center gap-2 rounded-full px-2.5 py-1.5 transition"
+              :class="index === active ? 'bg-primary/10' : 'hover:bg-base-300/60'"
+              :aria-label="`Go to slide ${index + 1}: ${slide.badge}`"
+              :aria-current="index === active ? 'true' : undefined"
+              @click="goTo(index)"
+            >
+              <span
+                class="h-2 rounded-full transition-all"
+                :class="index === active ? 'w-6 bg-primary' : 'w-2 bg-base-content/25 group-hover:bg-base-content/40'"
+              ></span>
+              <span
+                class="hidden text-[11px] font-semibold sm:inline"
+                :class="index === active ? 'text-primary' : 'opacity-60'"
+              >
+                {{ slide.badge }}
+              </span>
+            </button>
+          </div>
         </div>
+
+        <!-- Quick-action side panel: 1/3 -->
+        <aside class="lg:col-span-1" aria-label="Join Delivo">
+          <p class="px-1 text-xs font-semibold uppercase tracking-wider text-base-content/50">
+            Earn with Delivo
+          </p>
+          <div class="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
+            <NuxtLink
+              v-for="link in quickLinks"
+              :key="link.id"
+              :to="link.to"
+              class="group flex items-start gap-3 rounded-2xl border border-base-300 bg-base-100 p-3.5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md md:p-4"
+            >
+              <span
+                class="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+                :class="link.iconBg"
+              >
+                <Icon :name="link.icon" class="h-5 w-5" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-bold leading-tight">{{ link.title }}</h3>
+                <p class="mt-1 text-xs leading-snug opacity-65">{{ link.description }}</p>
+              </div>
+              <Icon
+                name="lucide:arrow-right"
+                class="mt-1 h-4 w-4 shrink-0 text-base-content/35 transition group-hover:translate-x-0.5 group-hover:text-primary"
+              />
+            </NuxtLink>
+          </div>
+        </aside>
       </div>
-
-      <!-- Prev / next -->
-      <button
-        type="button"
-        class="btn btn-circle btn-ghost absolute left-3 top-1/2 z-20 -translate-y-1/2 bg-base-100/80 backdrop-blur md:left-6"
-        aria-label="Previous slide"
-        @click="prev"
-      >
-        <Icon name="lucide:chevron-left" class="h-6 w-6" />
-      </button>
-      <button
-        type="button"
-        class="btn btn-circle btn-ghost absolute right-3 top-1/2 z-20 -translate-y-1/2 bg-base-100/80 backdrop-blur md:right-6"
-        aria-label="Next slide"
-        @click="next"
-      >
-        <Icon name="lucide:chevron-right" class="h-6 w-6" />
-      </button>
-    </div>
-
-    <!-- Dots -->
-    <div class="relative mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-3 px-4 py-6">
-      <button
-        v-for="(slide, index) in slides"
-        :key="`dot-${slide.id}`"
-        type="button"
-        class="group flex items-center gap-2 rounded-full px-3 py-2 transition"
-        :class="index === active ? 'bg-primary/10' : 'hover:bg-base-300/60'"
-        :aria-label="`Go to slide ${index + 1}: ${slide.badge}`"
-        :aria-current="index === active ? 'true' : undefined"
-        @click="goTo(index)"
-      >
-        <span
-          class="h-2.5 rounded-full transition-all"
-          :class="index === active ? 'w-8 bg-primary' : 'w-2.5 bg-base-content/25 group-hover:bg-base-content/40'"
-        ></span>
-        <span
-          class="hidden text-xs font-semibold sm:inline"
-          :class="index === active ? 'text-primary' : 'opacity-60'"
-        >
-          {{ slide.badge }}
-        </span>
-      </button>
     </div>
   </section>
 </template>
@@ -176,12 +174,15 @@ interface HeroSlide {
   ctaLabel: string;
   ctaTo: string;
   secondaryCta?: SlideCta;
-  floating?: {
-    icon: string;
-    iconBg: string;
-    title: string;
-    subtitle: string;
-  };
+}
+
+interface QuickLink {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  iconBg: string;
+  to: string;
 }
 
 const slides: HeroSlide[] = [
@@ -199,12 +200,6 @@ const slides: HeroSlide[] = [
     ctaLabel: 'Start shopping',
     ctaTo: '#products',
     secondaryCta: { label: 'Read more', to: '/about/shoppers' },
-    floating: {
-      icon: 'lucide:truck',
-      iconBg: 'bg-success/15 text-success',
-      title: 'Out for delivery',
-      subtitle: 'Order #DL-2491 · Harare',
-    },
   },
   {
     id: 'vendors',
@@ -220,12 +215,6 @@ const slides: HeroSlide[] = [
     ctaLabel: 'Become a seller',
     ctaTo: '/vendor/apply',
     secondaryCta: { label: 'Read more', to: '/about/sellers' },
-    floating: {
-      icon: 'lucide:trending-up',
-      iconBg: 'bg-primary/15 text-primary',
-      title: 'New order',
-      subtitle: '3 items · $24.50',
-    },
   },
   {
     id: 'parcels',
@@ -241,12 +230,6 @@ const slides: HeroSlide[] = [
     ctaLabel: 'Send a parcel',
     ctaTo: '#parcel-delivery',
     secondaryCta: { label: 'Read more', to: '/about/parcels' },
-    floating: {
-      icon: 'lucide:map-pin',
-      iconBg: 'bg-info/15 text-info',
-      title: 'On the way',
-      subtitle: 'ETA 45 min · Avondale',
-    },
   },
   {
     id: 'fleet',
@@ -262,12 +245,6 @@ const slides: HeroSlide[] = [
     ctaLabel: 'Become a partner',
     ctaTo: '/providers/apply',
     secondaryCta: { label: 'Read more', to: '/about/providers' },
-    floating: {
-      icon: 'lucide:trending-up',
-      iconBg: 'bg-success/15 text-success',
-      title: '3 shipments today',
-      subtitle: 'All-Zim Couriers · $36 earned',
-    },
   },
   {
     id: 'influencers',
@@ -283,12 +260,41 @@ const slides: HeroSlide[] = [
     ctaLabel: 'Become an influencer',
     ctaTo: '/influencers/apply',
     secondaryCta: { label: 'Read more', to: '/about/influencers' },
-    floating: {
-      icon: 'lucide:percent',
-      iconBg: 'bg-accent/30 text-accent-content',
-      title: '12% commission',
-      subtitle: 'Wireless earbuds · 3 sales today',
-    },
+  },
+];
+
+const quickLinks: QuickLink[] = [
+  {
+    id: 'become-vendor',
+    title: 'Become a vendor',
+    description: 'List your products and reach customers across Zimbabwe.',
+    icon: 'lucide:store',
+    iconBg: 'bg-primary/15 text-primary',
+    to: '/vendor/apply',
+  },
+  {
+    id: 'become-deliverer',
+    title: 'Become a deliverer',
+    description: 'Plug your fleet into Delivo orders and earn per delivery.',
+    icon: 'lucide:truck',
+    iconBg: 'bg-success/15 text-success',
+    to: '/providers/apply',
+  },
+  {
+    id: 'become-influencer',
+    title: 'Become an influencer',
+    description: 'Apply to share products and earn affiliate commission.',
+    icon: 'lucide:megaphone',
+    iconBg: 'bg-accent/30 text-accent-content',
+    to: '/influencers/apply',
+  },
+  {
+    id: 'promote-commission',
+    title: 'Promote commission products',
+    description: 'Browse products paying commission and share your code.',
+    icon: 'lucide:percent',
+    iconBg: 'bg-info/15 text-info',
+    to: '/influencer',
   },
 ];
 
@@ -317,7 +323,6 @@ const goTo = (index: number) => {
 };
 
 const next = () => goTo(active.value + 1);
-const prev = () => goTo(active.value - 1);
 
 const startAutoplay = () => {
   stopAutoplay();

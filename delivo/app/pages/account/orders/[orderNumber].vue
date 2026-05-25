@@ -30,7 +30,7 @@
             :key="step.key"
             :class="[
               'rounded-2xl border-2 p-3 text-xs transition',
-              step.state === 'done' ? 'border-success/40 bg-success/5 text-success-content' : '',
+              step.state === 'done' ? 'border-success/40 bg-success/5' : '',
               step.state === 'active' ? 'border-primary bg-primary/5' : '',
               step.state === 'todo' ? 'border-base-300 opacity-50' : '',
             ]"

@@ -72,16 +72,29 @@ export const useAuthStore = defineStore('auth', () => {
 
   const landingPath = computed(() => landingForRoles(user.value?.roles));
 
-  const login = async (credentials: LoginPayload) => {
+  /**
+   * Decide where to send the user after a successful login/register.
+   * Safe `redirectTo` values are same-origin paths starting with `/` but
+   * not `//` (which would be protocol-relative). Anything else falls
+   * back to the role-based landing.
+   */
+  const resolveLanding = (redirectTo?: string | null): string => {
+    if (typeof redirectTo === 'string' && redirectTo.startsWith('/') && !redirectTo.startsWith('//')) {
+      return redirectTo;
+    }
+    return landingForRoles(user.value?.roles);
+  };
+
+  const login = async (credentials: LoginPayload, redirectTo?: string | null) => {
     await sanctum.login(credentials);
-    await navigateTo(landingForRoles(user.value?.roles));
+    await navigateTo(resolveLanding(redirectTo));
   };
 
   const logout = async () => {
     await sanctum.logout();
   };
 
-  const register = async (payload: RegisterPayload) => {
+  const register = async (payload: RegisterPayload, redirectTo?: string | null) => {
     const response = await client<{ token?: string; data?: { user?: AuthUser } }>(
       '/api/v1/auth/register',
       { method: 'POST', body: payload },
@@ -97,7 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
     tokenCookie.value = response.token;
 
     await sanctum.refreshIdentity();
-    await navigateTo(landingForRoles(user.value?.roles));
+    await navigateTo(resolveLanding(redirectTo));
   };
 
   /**
