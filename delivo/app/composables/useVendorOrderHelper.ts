@@ -38,5 +38,32 @@ export const useVendorOrderHelper = () => {
     }
   };
 
-  return { listOrders, ordersSummary, listCoupons, couponsSummary };
+  const listCarts = async () => {
+    try {
+      const data = await client('/api/v1/vendor/me/carts', { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
+  const listDropoffs = async () => {
+    try {
+      const data = await client('/api/v1/vendor/me/dropoffs', { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
+  const markDroppedOff = async (shipmentId: number) => {
+    try {
+      const data = await client(`/api/v1/vendor/me/shipments/${shipmentId}/dropoff`, { method: 'POST' });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  return { listOrders, ordersSummary, listCoupons, couponsSummary, listCarts, listDropoffs, markDroppedOff };
 };

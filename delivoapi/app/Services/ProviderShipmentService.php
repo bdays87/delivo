@@ -48,6 +48,11 @@ class ProviderShipmentService
      */
     public function pickup(OrderDeliveryShipment $shipment): bool
     {
+        // Rider can't pick up until the vendor has confirmed dropoff at the hub.
+        if ($shipment->dropped_off_at === null) {
+            return false;
+        }
+
         return $this->transition($shipment, OrderDeliveryShipment::STATUS_ASSIGNED, OrderDeliveryShipment::STATUS_PICKED_UP, 'picked_up_at');
     }
 

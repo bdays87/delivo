@@ -54,6 +54,19 @@ class OrderStatusService
                     ],
                 );
             }
+
+            // Start the vendor dropoff window for every shipment that hasn't
+            // already shipped. The deadline is what the vendor sees on their
+            // orders page; the rider can't pick up until dropped_off_at is set.
+            $windowHours = (int) config('logistics.dropoff_window_hours', 48);
+            foreach ($order->shipments as $shipment) {
+                if ($shipment->dropped_off_at !== null) {
+                    continue;
+                }
+                $shipment->forceFill([
+                    'dropoff_deadline' => now()->addHours($windowHours),
+                ])->save();
+            }
         });
 
         return ['order' => $order->fresh(['items'])];

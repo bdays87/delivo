@@ -47,6 +47,18 @@ class ProviderShipmentController extends Controller
 
     public function pickup(Request $request, int $shipmentId): JsonResponse
     {
+        $provider = $this->requireActiveProvider($request);
+        if ($provider instanceof JsonResponse) {
+            return $provider;
+        }
+        $shipment = $this->service->findForProvider($provider, $shipmentId);
+        if ($shipment === null) {
+            return ApiResponse::notFound('Shipment not found.');
+        }
+        if ($shipment->dropped_off_at === null) {
+            return ApiResponse::error('Vendor has not dropped this package at the hub yet.', 409);
+        }
+
         return $this->transition($request, $shipmentId, 'pickup', 'Only assigned shipments can be picked up.');
     }
 

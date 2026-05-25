@@ -160,6 +160,10 @@ Route::prefix('v1')->group(function () {
         // Vendor visibility — orders, coupons, influencer attribution.
         Route::get('vendor/me/orders', [VendorOrderController::class, 'index'])->name('v1.vendor.orders.index');
         Route::get('vendor/me/orders/summary', [VendorOrderController::class, 'summary'])->name('v1.vendor.orders.summary');
+        Route::get('vendor/me/carts', [VendorOrderController::class, 'carts'])->name('v1.vendor.carts.index');
+        Route::get('vendor/me/dropoffs', [VendorOrderController::class, 'dropoffs'])->name('v1.vendor.dropoffs.index');
+        Route::post('vendor/me/shipments/{shipmentId}/dropoff', [VendorOrderController::class, 'markDroppedOff'])
+            ->whereNumber('shipmentId')->name('v1.vendor.shipments.dropoff');
         Route::get('vendor/me/coupons', [VendorCouponController::class, 'index'])->name('v1.vendor.coupons.index');
         Route::get('vendor/me/coupons/summary', [VendorCouponController::class, 'summary'])->name('v1.vendor.coupons.summary');
         Route::post('vendor/me/kyc-documents', [VendorController::class, 'uploadKyc'])->name('v1.vendor.kyc.upload');

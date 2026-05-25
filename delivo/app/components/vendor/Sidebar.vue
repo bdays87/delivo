@@ -43,6 +43,7 @@ const navItems = [
   { label: 'Dashboard', to: '/vendor', icon: 'lucide:layout-dashboard' },
   { label: 'Products', to: '/vendor/products', icon: 'lucide:package' },
   { label: 'Orders', to: '/vendor/orders', icon: 'lucide:shopping-cart' },
+  { label: 'Active carts', to: '/vendor/carts', icon: 'lucide:shopping-bag' },
   { label: 'Coupons', to: '/vendor/coupons', icon: 'lucide:ticket' },
   { label: 'Earnings', to: '/vendor/earnings', icon: 'lucide:banknote' },
   { label: 'Store settings', to: '/vendor/settings', icon: 'lucide:settings' },

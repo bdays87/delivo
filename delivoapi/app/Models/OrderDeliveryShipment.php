@@ -33,6 +33,8 @@ class OrderDeliveryShipment extends Model
         'fee_usd',
         'delivery_fee_id',
         'shipment_status',
+        'dropoff_deadline',
+        'dropped_off_at',
         'assigned_at',
         'picked_up_at',
         'out_for_delivery_at',
@@ -44,6 +46,8 @@ class OrderDeliveryShipment extends Model
         return [
             'distance_km' => 'decimal:2',
             'fee_usd' => 'decimal:2',
+            'dropoff_deadline' => 'datetime',
+            'dropped_off_at' => 'datetime',
             'assigned_at' => 'datetime',
             'picked_up_at' => 'datetime',
             'out_for_delivery_at' => 'datetime',
