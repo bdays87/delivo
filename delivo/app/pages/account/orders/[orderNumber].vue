@@ -16,7 +16,10 @@
           <h1 class="mt-1 text-3xl font-extrabold tracking-tight">{{ store.current.order_number }}</h1>
           <p class="text-sm opacity-70">Placed {{ store.current.created_at?.slice(0, 10) }}</p>
         </div>
-        <span :class="['badge badge-lg', statusBadge]">{{ statusLabel }}</span>
+        <div class="flex flex-col items-end gap-2">
+          <span :class="['badge badge-lg', statusBadge]">{{ statusLabel }}</span>
+          <span :class="['badge', deliveryBadge]">{{ deliveryLabel }}</span>
+        </div>
       </div>
 
       <section
@@ -215,6 +218,24 @@ const statusBadge = computed(() => ({
   CANCELLED: 'badge-error',
   REFUNDED: 'badge-ghost',
 }[store.current?.status as OrderStatus] ?? 'badge-ghost'));
+
+const deliveryLabel = computed(() => ({
+  PENDING: 'Delivery: pending',
+  AWAITING_DROPOFF: 'Delivery: awaiting vendor dropoff',
+  DROPOFF_INITIATED: 'Delivery: parcel on its way to hub',
+  AWAITING_DISPATCH: 'Delivery: at hub, awaiting dispatch',
+  INROUTE: 'Delivery: in route',
+  DELIVERED: 'Delivery: delivered',
+}[store.current?.delivery_status as string] ?? ''));
+
+const deliveryBadge = computed(() => ({
+  PENDING: 'badge-ghost',
+  AWAITING_DROPOFF: 'badge-warning',
+  DROPOFF_INITIATED: 'badge-info',
+  AWAITING_DISPATCH: 'badge-info',
+  INROUTE: 'badge-info',
+  DELIVERED: 'badge-success',
+}[store.current?.delivery_status as string] ?? 'badge-ghost'));
 
 type ShipmentStatusKey = 'AWAITING_PROVIDER' | 'ASSIGNED' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
 

@@ -42,6 +42,15 @@ class DeliveryZoneRepository extends BaseRepository implements IDeliveryZoneInte
             ->first();
     }
 
+    public function listActiveByCity(string $city): Collection
+    {
+        return $this->model
+            ->whereRaw('LOWER(city) = ?', [mb_strtolower(trim($city))])
+            ->where('status', DeliveryZone::STATUS_ACTIVE)
+            ->orderBy('hub_name')
+            ->get();
+    }
+
     public function archive(int $id): bool
     {
         return $this->update($id, ['status' => DeliveryZone::STATUS_ARCHIVED]);

@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Interfaces\Repositories\IDeliveryZoneInterface;
 use App\Models\CartItem;
+use App\Models\DeliveryZone;
 use App\Models\Order;
 use App\Models\OrderDeliveryShipment;
 use App\Models\OrderItem;
@@ -18,6 +20,8 @@ use App\Models\Vendor;
  */
 class VendorOrderService
 {
+    public function __construct(private readonly IDeliveryZoneInterface $zones) {}
+
     /**
      * Statuses a vendor sees by default. Includes PENDING_PAYMENT so vendors
      * can follow up with customers who haven't paid yet.
@@ -31,22 +35,26 @@ class VendorOrderService
         Order::STATUS_COMPLETED,
     ];
 
-    public function listForVendor(Vendor $vendor, ?string $status = null): array
+    public function listForVendor(Vendor $vendor, ?string $status = null, ?string $deliveryStatus = null): array
     {
         $query = OrderItem::query()
             ->with([
-                'order:id,order_number,status,ship_city,ship_suburb,payment_confirmed_at,delivered_at,created_at,user_id',
+                'order:id,order_number,status,delivery_status,ship_city,ship_suburb,payment_confirmed_at,delivered_at,created_at,user_id',
                 'order.user:id,name',
+                'order.shipments:id,order_id,vendor_id,hub_id,hub_name_snapshot,hub_address_snapshot,dropoff_initiated_at,dropped_off_at',
                 'product:id,name,slug',
                 'variant:id,color,sku',
                 'influencer:id,display_name,slug',
             ])
             ->where('vendor_id', $vendor->id)
-            ->whereHas('order', function ($q) use ($status) {
+            ->whereHas('order', function ($q) use ($status, $deliveryStatus) {
                 if ($status !== null && $status !== '') {
                     $q->where('status', $status);
                 } else {
                     $q->whereIn('status', self::VISIBLE_STATUSES);
+                }
+                if ($deliveryStatus !== null && $deliveryStatus !== '') {
+                    $q->where('delivery_status', $deliveryStatus);
                 }
             })
             ->orderByDesc('id');
@@ -54,53 +62,63 @@ class VendorOrderService
         return $query->get()->map(fn (OrderItem $item) => $this->shape($item))->all();
     }
 
-    public function shipmentsAwaitingDropoff(Vendor $vendor): array
+    /**
+     * Hubs the vendor can choose from when initiating a dropoff. We use the
+     * vendor's registered city — the same city their shipments originate from.
+     */
+    public function listDropoffHubs(Vendor $vendor): array
     {
-        $shipments = OrderDeliveryShipment::query()
-            ->with([
-                'order:id,order_number,status,ship_recipient_name,ship_city,ship_suburb,payment_confirmed_at',
-                'hub:id,city,hub_name,hub_address',
+        return $this->zones
+            ->listActiveByCity((string) $vendor->city)
+            ->map(fn (DeliveryZone $z) => [
+                'id' => $z->id,
+                'city' => $z->city,
+                'name' => $z->hub_name,
+                'address' => $z->hub_address,
             ])
-            ->where('vendor_id', $vendor->id)
-            ->whereNull('dropped_off_at')
-            ->whereHas('order', fn ($q) => $q->where('status', Order::STATUS_PAID))
-            ->orderBy('dropoff_deadline')
-            ->get();
-
-        return $shipments->map(fn (OrderDeliveryShipment $s) => [
-            'id' => $s->id,
-            'order' => $s->order ? [
-                'order_number' => $s->order->order_number,
-                'status' => $s->order->status,
-                'ship_city' => $s->order->ship_city,
-                'ship_suburb' => $s->order->ship_suburb,
-                'payment_confirmed_at' => $s->order->payment_confirmed_at,
-            ] : null,
-            'hub' => $s->hub ? [
-                'name' => $s->hub_name_snapshot ?? $s->hub->hub_name,
-                'address' => $s->hub_address_snapshot ?? $s->hub->hub_address,
-                'city' => $s->hub->city,
-            ] : null,
-            'dropoff_deadline' => $s->dropoff_deadline,
-            'is_overdue' => $s->dropoff_deadline !== null && $s->dropoff_deadline->isPast(),
-        ])->all();
+            ->all();
     }
 
-    public function markDroppedOff(Vendor $vendor, int $shipmentId): array
+    public function initiateDropoff(Vendor $vendor, int $shipmentId, int $hubId): array
     {
         $shipment = OrderDeliveryShipment::query()
-            ->where('vendor_id', $vendor->id)
             ->where('id', $shipmentId)
+            ->where('vendor_id', $vendor->id)
             ->first();
 
         if ($shipment === null) {
             return ['error' => 'Shipment not found.', 'code' => 404];
         }
+        if ($shipment->dropoff_initiated_at !== null) {
+            return ['error' => 'Dropoff already initiated for this shipment.', 'code' => 422];
+        }
         if ($shipment->dropped_off_at !== null) {
-            return ['error' => 'This shipment was already marked dropped off.', 'code' => 422];
+            return ['error' => 'This shipment was already received at the hub.', 'code' => 422];
+        }
+        if ($shipment->order && $shipment->order->status !== Order::STATUS_PAID) {
+            return ['error' => 'Only paid orders can have dropoff initiated.', 'code' => 422];
         }
 
-        $shipment->forceFill(['dropped_off_at' => now()])->save();
+        // Validate hub belongs to a city the vendor can drop at.
+        $hub = $this->zones->findById($hubId);
+        if ($hub === null || $hub->status !== DeliveryZone::STATUS_ACTIVE) {
+            return ['error' => 'Selected hub is not available.', 'code' => 422];
+        }
+        if (mb_strtolower(trim((string) $hub->city)) !== mb_strtolower(trim((string) $vendor->city))) {
+            return ['error' => 'You can only drop off at hubs in your registered city.', 'code' => 422];
+        }
+
+        $shipment->forceFill([
+            'hub_id' => $hub->id,
+            'hub_name_snapshot' => $hub->hub_name,
+            'hub_address_snapshot' => $hub->hub_address,
+            'dropoff_initiated_at' => now(),
+        ])->save();
+
+        $order = $shipment->order()->with('shipments')->first();
+        if ($order !== null) {
+            app(OrderStatusService::class)->recomputeDeliveryStatus($order);
+        }
 
         return ['shipment' => $shipment->fresh()];
     }
@@ -253,18 +271,29 @@ class VendorOrderService
         $lineCommission = (float) $item->line_commission_usd_snapshot;
         $lineNet = round((float) $item->line_total_usd_snapshot - $lineCommission, 2);
 
+        $shipment = $order?->shipments?->firstWhere('vendor_id', $item->vendor_id);
+
         return [
             'id' => $item->id,
             'order' => $order ? [
                 'id' => $order->id,
                 'order_number' => $order->order_number,
                 'status' => $order->status,
+                'delivery_status' => $order->delivery_status,
                 'ship_city' => $order->ship_city,
                 'ship_suburb' => $order->ship_suburb,
                 'customer_name' => $order->user?->name,
                 'payment_confirmed_at' => $order->payment_confirmed_at,
                 'delivered_at' => $order->delivered_at,
                 'created_at' => $order->created_at,
+            ] : null,
+            'shipment' => $shipment ? [
+                'id' => $shipment->id,
+                'hub_id' => $shipment->hub_id,
+                'hub_name' => $shipment->hub_name_snapshot,
+                'hub_address' => $shipment->hub_address_snapshot,
+                'dropoff_initiated_at' => $shipment->dropoff_initiated_at,
+                'dropped_off_at' => $shipment->dropped_off_at,
             ] : null,
             'product' => $item->product ? [
                 'id' => $item->product->id,

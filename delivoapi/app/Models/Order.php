@@ -27,6 +27,18 @@ class Order extends Model
 
     public const STATUS_REFUNDED = 'REFUNDED';
 
+    public const DELIVERY_PENDING = 'PENDING';
+
+    public const DELIVERY_AWAITING_DROPOFF = 'AWAITING_DROPOFF';
+
+    public const DELIVERY_DROPOFF_INITIATED = 'DROPOFF_INITIATED';
+
+    public const DELIVERY_AWAITING_DISPATCH = 'AWAITING_DISPATCH';
+
+    public const DELIVERY_INROUTE = 'INROUTE';
+
+    public const DELIVERY_DELIVERED = 'DELIVERED';
+
     protected $fillable = [
         'order_number',
         'user_id',
@@ -39,6 +51,7 @@ class Order extends Model
         'ship_street',
         'ship_notes',
         'status',
+        'delivery_status',
         'subtotal_usd',
         'total_buyer_discount_usd',
         'total_influencer_commission_usd',
@@ -52,6 +65,7 @@ class Order extends Model
         'delivery_code',
         'payment_confirmed_at',
         'delivered_at',
+        'customer_delivery_confirmed_at',
         'cancellation_reason',
     ];
 
@@ -67,6 +81,7 @@ class Order extends Model
             'usd_to_zwg_rate' => 'decimal:6',
             'payment_confirmed_at' => 'datetime',
             'delivered_at' => 'datetime',
+            'customer_delivery_confirmed_at' => 'datetime',
         ];
     }
 

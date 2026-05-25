@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\DeliveryProvider;
-use App\Models\Order;
 use App\Models\OrderDeliveryShipment;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -63,12 +62,11 @@ class ProviderShipmentService
 
     public function deliver(OrderDeliveryShipment $shipment): bool
     {
-        $ok = $this->transition($shipment, OrderDeliveryShipment::STATUS_OUT_FOR_DELIVERY, OrderDeliveryShipment::STATUS_DELIVERED, 'delivered_at');
-        if ($ok) {
-            $this->maybeFinaliseOrder($shipment->order_id);
-        }
-
-        return $ok;
+        // Note: this only marks the shipment delivered + recomputes the order's
+        // delivery_status (handled inside transition). The order itself is NOT
+        // flipped to DELIVERED here — only the admin's mark-delivered action
+        // does that, which also clears influencer earnings.
+        return $this->transition($shipment, OrderDeliveryShipment::STATUS_OUT_FOR_DELIVERY, OrderDeliveryShipment::STATUS_DELIVERED, 'delivered_at');
     }
 
     private function transition(OrderDeliveryShipment $shipment, string $from, string $to, string $timestampField): bool
@@ -83,28 +81,12 @@ class ProviderShipmentService
                 $timestampField => now(),
             ])->save();
 
+            $order = $shipment->order()->with('shipments')->first();
+            if ($order !== null) {
+                app(OrderStatusService::class)->recomputeDeliveryStatus($order);
+            }
+
             return true;
         });
-    }
-
-    /**
-     * If every shipment on the order is DELIVERED, mark the order itself
-     * delivered too. Customer's order timeline reflects the same status.
-     */
-    private function maybeFinaliseOrder(int $orderId): void
-    {
-        $order = Order::query()->with('shipments:id,order_id,shipment_status')->find($orderId);
-        if ($order === null) {
-            return;
-        }
-        if ($order->shipments->isEmpty()) {
-            return;
-        }
-        $allDelivered = $order->shipments->every(
-            fn ($s) => $s->shipment_status === OrderDeliveryShipment::STATUS_DELIVERED,
-        );
-        if ($allDelivered && $order->status !== Order::STATUS_DELIVERED) {
-            $order->forceFill(['status' => Order::STATUS_DELIVERED])->save();
-        }
     }
 }

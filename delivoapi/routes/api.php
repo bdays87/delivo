@@ -161,9 +161,9 @@ Route::prefix('v1')->group(function () {
         Route::get('vendor/me/orders', [VendorOrderController::class, 'index'])->name('v1.vendor.orders.index');
         Route::get('vendor/me/orders/summary', [VendorOrderController::class, 'summary'])->name('v1.vendor.orders.summary');
         Route::get('vendor/me/carts', [VendorOrderController::class, 'carts'])->name('v1.vendor.carts.index');
-        Route::get('vendor/me/dropoffs', [VendorOrderController::class, 'dropoffs'])->name('v1.vendor.dropoffs.index');
-        Route::post('vendor/me/shipments/{shipmentId}/dropoff', [VendorOrderController::class, 'markDroppedOff'])
-            ->whereNumber('shipmentId')->name('v1.vendor.shipments.dropoff');
+        Route::get('vendor/me/dropoff-hubs', [VendorOrderController::class, 'dropoffHubs'])->name('v1.vendor.dropoff-hubs');
+        Route::post('vendor/me/shipments/{shipmentId}/initiate-dropoff', [VendorOrderController::class, 'initiateDropoff'])
+            ->whereNumber('shipmentId')->name('v1.vendor.shipments.initiate-dropoff');
         Route::get('vendor/me/coupons', [VendorCouponController::class, 'index'])->name('v1.vendor.coupons.index');
         Route::get('vendor/me/coupons/summary', [VendorCouponController::class, 'summary'])->name('v1.vendor.coupons.summary');
         Route::post('vendor/me/kyc-documents', [VendorController::class, 'uploadKyc'])->name('v1.vendor.kyc.upload');
@@ -246,6 +246,10 @@ Route::prefix('v1')->group(function () {
                 ->where('orderNumber', '[A-Z0-9-]+')->name('v1.admin.orders.show');
             Route::post('orders/{orderNumber}/confirm-payment', [AdminOrderController::class, 'confirmPayment'])
                 ->where('orderNumber', '[A-Z0-9-]+')->name('v1.admin.orders.confirm-payment');
+            Route::post('orders/{orderNumber}/mark-dropped-off', [AdminOrderController::class, 'markDroppedOff'])
+                ->where('orderNumber', '[A-Z0-9-]+')->name('v1.admin.orders.mark-dropped-off');
+            Route::post('orders/{orderNumber}/mark-delivered', [AdminOrderController::class, 'markDelivered'])
+                ->where('orderNumber', '[A-Z0-9-]+')->name('v1.admin.orders.mark-delivered');
 
             // Admin payout queue — approve/mark-paid/reject.
             Route::get('payouts', [AdminPayoutController::class, 'index'])

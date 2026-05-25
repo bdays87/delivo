@@ -24,7 +24,11 @@ class VendorOrderController extends Controller
         }
 
         return ApiResponse::success(
-            $this->orders->listForVendor($vendor, $request->query('status')),
+            $this->orders->listForVendor(
+                $vendor,
+                $request->query('status'),
+                $request->query('delivery_status'),
+            ),
             'Vendor orders retrieved successfully.',
         );
     }
@@ -55,7 +59,7 @@ class VendorOrderController extends Controller
         );
     }
 
-    public function dropoffs(Request $request): JsonResponse
+    public function dropoffHubs(Request $request): JsonResponse
     {
         $vendor = $this->vendors->currentForUser($request->user());
         if ($vendor === null) {
@@ -63,23 +67,27 @@ class VendorOrderController extends Controller
         }
 
         return ApiResponse::success(
-            $this->orders->shipmentsAwaitingDropoff($vendor),
-            'Pending dropoffs retrieved successfully.',
+            $this->orders->listDropoffHubs($vendor),
+            'Dropoff hubs retrieved successfully.',
         );
     }
 
-    public function markDroppedOff(Request $request, int $shipmentId): JsonResponse
+    public function initiateDropoff(Request $request, int $shipmentId): JsonResponse
     {
         $vendor = $this->vendors->currentForUser($request->user());
         if ($vendor === null) {
             return ApiResponse::notFound('No vendor profile on file.');
         }
 
-        $result = $this->orders->markDroppedOff($vendor, $shipmentId);
+        $data = $request->validate([
+            'hub_id' => ['required', 'integer'],
+        ]);
+
+        $result = $this->orders->initiateDropoff($vendor, $shipmentId, (int) $data['hub_id']);
         if (isset($result['error'])) {
             return ApiResponse::error($result['error'], $result['code']);
         }
 
-        return ApiResponse::success($result['shipment'], 'Shipment marked dropped off.');
+        return ApiResponse::success($result['shipment'], 'Dropoff initiated.');
     }
 }

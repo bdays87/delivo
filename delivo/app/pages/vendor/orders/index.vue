@@ -14,54 +14,6 @@
       </span>
     </div>
 
-    <section v-if="dropoffs.length" class="mt-6 rounded-3xl border border-warning/40 bg-warning/5 p-5">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="text-lg font-bold">
-            <Icon name="lucide:truck" class="inline h-5 w-5" />
-            Drop off at hub — {{ dropoffs.length }} pending
-          </h2>
-          <p class="mt-1 text-sm opacity-80">
-            Take each parcel to its assigned hub before the deadline. The rider can't collect
-            until you mark it dropped off.
-          </p>
-        </div>
-      </div>
-
-      <ul class="mt-4 divide-y divide-warning/20">
-        <li
-          v-for="d in dropoffs"
-          :key="d.id"
-          :class="['flex flex-wrap items-center justify-between gap-3 py-3', d.is_overdue ? 'text-error' : '']"
-        >
-          <div class="min-w-0">
-            <div class="font-mono text-xs font-semibold">{{ d.order?.order_number }}</div>
-            <div class="text-sm">
-              Drop at <span class="font-semibold">{{ d.hub?.name ?? d.hub?.city }}</span>
-              <span v-if="d.hub?.address" class="opacity-70"> · {{ d.hub.address }}</span>
-            </div>
-            <div class="text-xs opacity-70">
-              Delivery to {{ d.order?.ship_suburb }}, {{ d.order?.ship_city }}
-            </div>
-          </div>
-          <div class="text-right">
-            <div :class="['text-xs uppercase tracking-wider', d.is_overdue ? 'text-error' : 'opacity-60']">
-              {{ d.is_overdue ? 'Overdue' : 'Deadline' }}
-            </div>
-            <div class="text-sm font-semibold">{{ formatDeadline(d.dropoff_deadline) }}</div>
-            <button
-              class="btn btn-success btn-sm mt-1 rounded-full"
-              :disabled="droppingOff === d.id"
-              @click="onMarkDroppedOff(d.id)"
-            >
-              <span v-if="droppingOff === d.id" class="loading loading-spinner loading-xs"></span>
-              Mark dropped off
-            </button>
-          </div>
-        </li>
-      </ul>
-    </section>
-
     <div class="mt-6 grid gap-4 md:grid-cols-4">
       <div class="rounded-2xl bg-base-100 p-4">
         <div class="text-xs uppercase tracking-wider opacity-60">Confirmed orders</div>
@@ -84,9 +36,9 @@
     <div class="mt-6 flex flex-wrap gap-2">
       <button
         v-for="tab in tabs"
-        :key="tab.value"
-        :class="['btn btn-sm rounded-full', filterStatus === tab.value ? 'btn-primary' : 'btn-ghost']"
-        @click="setFilter(tab.value)"
+        :key="tab.key"
+        :class="['btn btn-sm rounded-full', activeKey === tab.key ? 'btn-primary' : 'btn-ghost']"
+        @click="setFilter(tab.key)"
       >
         {{ tab.label }}
       </button>
@@ -112,6 +64,7 @@
             <th>Influencer</th>
             <th class="text-right">Your net</th>
             <th>Status</th>
+            <th>Delivery</th>
           </tr>
         </thead>
         <tbody>
@@ -142,10 +95,69 @@
             <td>
               <span :class="['badge badge-sm', statusBadge(r.order?.status)]">{{ statusLabel(r.order?.status) }}</span>
             </td>
+            <td>
+              <span :class="['badge badge-sm', deliveryBadge(r.order?.delivery_status)]">{{ deliveryLabel(r.order?.delivery_status) }}</span>
+              <div v-if="canInitiate(r)" class="mt-1">
+                <button
+                  class="btn btn-warning btn-xs rounded-full"
+                  @click="openDropoffModal(r)"
+                >
+                  Initiate dropoff
+                </button>
+              </div>
+              <div v-else-if="r.shipment?.dropoff_initiated_at && !r.shipment?.dropped_off_at" class="mt-1 text-xs opacity-70">
+                Awaiting hub receipt
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <dialog ref="dropoffDialog" class="modal">
+      <div class="modal-box max-w-md">
+        <h3 class="text-lg font-bold">Initiate dropoff</h3>
+        <p class="mt-1 text-sm opacity-70">
+          Select the hub where you're taking parcel
+          <span class="font-mono">{{ activeRow?.order?.order_number }}</span>. Hub staff will inspect
+          and confirm receipt on arrival.
+        </p>
+
+        <div v-if="!hubs.length" class="mt-4 rounded-2xl border border-warning/40 bg-warning/5 p-3 text-sm">
+          No active hubs in your city yet. Contact Delivo support.
+        </div>
+
+        <div v-else class="mt-4 grid gap-2">
+          <label
+            v-for="h in hubs"
+            :key="h.id"
+            :class="[
+              'flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 transition',
+              selectedHubId === h.id ? 'border-primary bg-primary/5' : 'border-base-300 hover:border-primary/50',
+            ]"
+          >
+            <input v-model="selectedHubId" type="radio" :value="h.id" class="radio radio-primary mt-1" />
+            <div class="min-w-0">
+              <div class="font-semibold">{{ h.name ?? h.city }}</div>
+              <div v-if="h.address" class="text-xs opacity-70">{{ h.address }}</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="modal-action">
+          <button class="btn rounded-full" @click="closeDropoffModal">Cancel</button>
+          <button
+            class="btn btn-primary rounded-full"
+            :disabled="!selectedHubId || initiating"
+            @click="submitDropoff"
+          >
+            <span v-if="initiating" class="loading loading-spinner loading-xs"></span>
+            Confirm I'm dropping off
+          </button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
   </div>
 </template>
 
@@ -154,6 +166,7 @@ definePageMeta({ layout: 'vendor', middleware: ['auth'] });
 useHead({ title: 'Orders — Delivo Vendor' });
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
+type DeliveryStatus = 'PENDING' | 'AWAITING_DROPOFF' | 'DROPOFF_INITIATED' | 'AWAITING_DISPATCH' | 'INROUTE' | 'DELIVERED';
 
 interface OrderRow {
   id: number;
@@ -161,12 +174,21 @@ interface OrderRow {
     id: number;
     order_number: string;
     status: OrderStatus;
+    delivery_status: DeliveryStatus;
     ship_city: string;
     ship_suburb: string;
     customer_name: string | null;
     payment_confirmed_at: string | null;
     delivered_at: string | null;
     created_at: string;
+  } | null;
+  shipment: {
+    id: number;
+    hub_id: number | null;
+    hub_name: string | null;
+    hub_address: string | null;
+    dropoff_initiated_at: string | null;
+    dropped_off_at: string | null;
   } | null;
   product: { id: number; name: string; slug: string } | null;
   variant: { id: number; color: string | null; sku: string | null } | null;
@@ -187,30 +209,73 @@ interface SummaryRow {
   net_after_commission_usd: string;
 }
 
-const { listOrders, ordersSummary, listDropoffs, markDroppedOff } = useVendorOrderHelper();
+const { listOrders, ordersSummary, listDropoffHubs, initiateDropoff } = useVendorOrderHelper();
 const toast = useToast();
 
-interface DropoffRow {
-  id: number;
-  order: { order_number: string; status: string; ship_city: string; ship_suburb: string; payment_confirmed_at: string | null } | null;
-  hub: { name: string | null; address: string | null; city: string } | null;
-  dropoff_deadline: string | null;
-  is_overdue: boolean;
-}
+interface DropoffHub { id: number; city: string; name: string | null; address: string | null }
 
-const dropoffs = ref<DropoffRow[]>([]);
-const droppingOff = ref<number | null>(null);
+const dropoffDialog = ref<HTMLDialogElement | null>(null);
+const activeRow = ref<OrderRow | null>(null);
+const hubs = ref<DropoffHub[]>([]);
+const selectedHubId = ref<number | null>(null);
+const initiating = ref(false);
 
-const tabs: { label: string; value: '' | OrderStatus }[] = [
-  { label: 'All', value: '' },
-  { label: 'Awaiting payment', value: 'PENDING_PAYMENT' },
-  { label: 'Paid', value: 'PAID' },
-  { label: 'Out for delivery', value: 'OUT_FOR_DELIVERY' },
-  { label: 'Delivered', value: 'DELIVERED' },
+const canInitiate = (r: OrderRow) =>
+  r.order?.status === 'PAID'
+  && r.order?.delivery_status === 'AWAITING_DROPOFF'
+  && r.shipment !== null
+  && r.shipment.dropoff_initiated_at === null;
+
+const openDropoffModal = async (r: OrderRow) => {
+  activeRow.value = r;
+  selectedHubId.value = r.shipment?.hub_id ?? null;
+  if (!hubs.value.length) {
+    const { data, error } = await listDropoffHubs();
+    if (!error.value) {
+      hubs.value = ((data.value as any)?.data ?? []) as DropoffHub[];
+    }
+  }
+  dropoffDialog.value?.showModal();
+};
+
+const closeDropoffModal = () => {
+  dropoffDialog.value?.close();
+  activeRow.value = null;
+  selectedHubId.value = null;
+};
+
+const submitDropoff = async () => {
+  if (!activeRow.value?.shipment || !selectedHubId.value) return;
+  initiating.value = true;
+  const { status, error } = await initiateDropoff(activeRow.value.shipment.id, selectedHubId.value);
+  if (status?.value) {
+    toast.success({ title: 'Dropoff initiated', message: 'Hub staff will confirm receipt.', position: 'topRight', layout: 2 });
+    closeDropoffModal();
+    await fetchAll();
+  } else {
+    toast.error({
+      title: 'Could not initiate',
+      message: (error?.value as any)?.data?.message || 'Try again.',
+      position: 'topRight',
+      layout: 2,
+    });
+  }
+  initiating.value = false;
+};
+
+interface Tab { key: string; label: string; status?: OrderStatus; delivery_status?: DeliveryStatus }
+const tabs: Tab[] = [
+  { key: 'all', label: 'All' },
+  { key: 'awaiting_payment', label: 'Awaiting payment', status: 'PENDING_PAYMENT' },
+  { key: 'awaiting_dropoff', label: 'Awaiting dropoff', delivery_status: 'AWAITING_DROPOFF' },
+  { key: 'dropoff_initiated', label: 'Dropoff in progress', delivery_status: 'DROPOFF_INITIATED' },
+  { key: 'awaiting_dispatch', label: 'Awaiting dispatch', delivery_status: 'AWAITING_DISPATCH' },
+  { key: 'inroute', label: 'In route', delivery_status: 'INROUTE' },
+  { key: 'delivered', label: 'Delivered', delivery_status: 'DELIVERED' },
 ];
 
 const loading = ref(false);
-const filterStatus = ref<'' | OrderStatus>('');
+const activeKey = ref<string>('all');
 const rows = ref<OrderRow[]>([]);
 const summary = ref<SummaryRow>({
   pending_payment_count: 0,
@@ -223,10 +288,10 @@ const summary = ref<SummaryRow>({
 
 const fetchAll = async () => {
   loading.value = true;
-  const [{ data: list, error }, { data: sum }, { data: drops }] = await Promise.all([
-    listOrders(filterStatus.value || undefined),
+  const tab = tabs.find((t) => t.key === activeKey.value);
+  const [{ data: list, error }, { data: sum }] = await Promise.all([
+    listOrders({ status: tab?.status, delivery_status: tab?.delivery_status }),
     ordersSummary(),
-    listDropoffs(),
   ]);
   if (!error.value) {
     rows.value = ((list.value as any)?.data ?? []) as OrderRow[];
@@ -234,38 +299,13 @@ const fetchAll = async () => {
     toast.error({ title: 'Error', message: (error.value as any)?.data?.message || 'Failed to load orders.', position: 'topRight', layout: 2 });
   }
   summary.value = ((sum.value as any)?.data ?? summary.value) as SummaryRow;
-  dropoffs.value = ((drops.value as any)?.data ?? []) as DropoffRow[];
   loading.value = false;
-};
-
-const onMarkDroppedOff = async (id: number) => {
-  if (!window.confirm('Confirm you have dropped this parcel at the hub?')) return;
-  droppingOff.value = id;
-  const { status, error } = await markDroppedOff(id);
-  if (status?.value) {
-    toast.success({ title: 'Marked dropped off', message: 'Rider can now collect.', position: 'topRight', layout: 2 });
-    await fetchAll();
-  } else {
-    toast.error({
-      title: 'Could not mark',
-      message: (error?.value as any)?.data?.message || 'Try again.',
-      position: 'topRight',
-      layout: 2,
-    });
-  }
-  droppingOff.value = null;
-};
-
-const formatDeadline = (iso: string | null): string => {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 };
 
 onMounted(fetchAll);
 
-const setFilter = async (v: '' | OrderStatus) => {
-  filterStatus.value = v;
+const setFilter = async (key: string) => {
+  activeKey.value = key;
   await fetchAll();
 };
 
@@ -290,4 +330,22 @@ const statusBadge = (s?: OrderStatus | null) => ({
   CANCELLED: 'badge-error',
   REFUNDED: 'badge-ghost',
 }[s as OrderStatus] ?? 'badge-ghost');
+
+const deliveryLabel = (s?: DeliveryStatus | null) => ({
+  PENDING: 'Pending',
+  AWAITING_DROPOFF: 'Awaiting dropoff',
+  DROPOFF_INITIATED: 'Dropoff in progress',
+  AWAITING_DISPATCH: 'Awaiting dispatch',
+  INROUTE: 'In route',
+  DELIVERED: 'Delivered',
+}[s as DeliveryStatus] ?? '—');
+
+const deliveryBadge = (s?: DeliveryStatus | null) => ({
+  PENDING: 'badge-ghost',
+  AWAITING_DROPOFF: 'badge-warning',
+  DROPOFF_INITIATED: 'badge-info',
+  AWAITING_DISPATCH: 'badge-info',
+  INROUTE: 'badge-info',
+  DELIVERED: 'badge-success',
+}[s as DeliveryStatus] ?? 'badge-ghost');
 </script>

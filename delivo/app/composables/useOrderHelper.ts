@@ -37,9 +37,13 @@ export const useOrderHelper = () => {
 export const useAdminOrderHelper = () => {
   const client = useSanctumClient();
 
-  const listOrders = async (status?: string) => {
+  const listOrders = async (filter?: { status?: string; delivery_status?: string }) => {
     try {
-      const url = status ? `/api/v1/admin/orders?status=${status}` : '/api/v1/admin/orders';
+      const params = new URLSearchParams();
+      if (filter?.status) params.set('status', filter.status);
+      if (filter?.delivery_status) params.set('delivery_status', filter.delivery_status);
+      const qs = params.toString();
+      const url = qs ? `/api/v1/admin/orders?${qs}` : '/api/v1/admin/orders';
       const data = await client(url, { method: 'GET' });
       return { data: ref(data), error: ref(null) };
     } catch (err) {
@@ -65,7 +69,25 @@ export const useAdminOrderHelper = () => {
     }
   };
 
-  return { listOrders, getOrder, confirmPayment };
+  const markDroppedOff = async (orderNumber: string) => {
+    try {
+      const data = await client(`/api/v1/admin/orders/${orderNumber}/mark-dropped-off`, { method: 'POST' });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  const markDelivered = async (orderNumber: string) => {
+    try {
+      const data = await client(`/api/v1/admin/orders/${orderNumber}/mark-delivered`, { method: 'POST' });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  return { listOrders, getOrder, confirmPayment, markDroppedOff, markDelivered };
 };
 
 export const useAdminPayoutHelper = () => {

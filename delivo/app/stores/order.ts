@@ -35,6 +35,7 @@ export interface Order {
   ship_street: string;
   ship_notes: string | null;
   status: OrderStatus;
+  delivery_status: 'PENDING' | 'AWAITING_DROPOFF' | 'DROPOFF_INITIATED' | 'AWAITING_DISPATCH' | 'INROUTE' | 'DELIVERED';
   subtotal_usd: string;
   total_buyer_discount_usd: string | null;
   total_influencer_commission_usd: string | null;

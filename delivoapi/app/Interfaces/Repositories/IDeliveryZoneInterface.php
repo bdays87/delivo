@@ -13,5 +13,7 @@ interface IDeliveryZoneInterface extends IBaseInterface
 
     public function findByCity(string $city): ?DeliveryZone;
 
+    public function listActiveByCity(string $city): Collection;
+
     public function archive(int $id): bool;
 }
