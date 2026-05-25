@@ -64,7 +64,55 @@ export const useInfluencerHelper = () => {
     }
   };
 
-  return { apply, getCurrent, addHandle, deleteHandle, listProducts, generateCode, listCodes };
+  const earningsSummary = async () => {
+    try {
+      const data = await client('/api/v1/influencer/me/earnings/summary', { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
+  const listEarnings = async () => {
+    try {
+      const data = await client('/api/v1/influencer/me/earnings', { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
+  const listPayoutRequests = async () => {
+    try {
+      const data = await client('/api/v1/influencer/me/payouts', { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
+  const createPayoutRequest = async (payload: Record<string, unknown>) => {
+    try {
+      const data = await client('/api/v1/influencer/me/payouts', { method: 'POST', body: payload });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  const cancelPayoutRequest = async (id: number) => {
+    try {
+      const data = await client(`/api/v1/influencer/me/payouts/${id}`, { method: 'DELETE' });
+      return { data: ref(data), status: ref(true), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) };
+    }
+  };
+
+  return {
+    apply, getCurrent, addHandle, deleteHandle, listProducts, generateCode, listCodes,
+    earningsSummary, listEarnings, listPayoutRequests, createPayoutRequest, cancelPayoutRequest,
+  };
 };
 
 export const useAdminInfluencerHelper = () => {

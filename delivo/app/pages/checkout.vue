@@ -125,7 +125,28 @@
       </div>
 
       <aside class="h-fit rounded-3xl border border-base-300 bg-base-100 p-6">
-        <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">Order summary</h2>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">Order summary</h2>
+          <div class="join">
+            <button
+              type="button"
+              :class="['btn btn-sm join-item rounded-l-full', currency.code === 'USD' ? 'btn-primary' : 'btn-ghost']"
+              @click="currency.setCode('USD')"
+            >USD</button>
+            <button
+              type="button"
+              :class="['btn btn-sm join-item rounded-r-full', currency.code === 'ZWG' ? 'btn-primary' : 'btn-ghost']"
+              :disabled="!currency.hasZwgRate"
+              :title="currency.hasZwgRate ? '' : 'ZWG rate not set yet'"
+              @click="currency.setCode('ZWG')"
+            >ZWG</button>
+          </div>
+        </div>
+        <p class="mt-2 text-xs opacity-60">
+          Choose how you want amounts displayed. Vendor prices are stored in USD;
+          <span v-if="currency.hasZwgRate">ZWG uses Delivo's published rate (1 USD = {{ currency.usdToZwgRate }} ZWG).</span>
+          <span v-else>ZWG is unavailable until an exchange rate is published.</span>
+        </p>
         <ul class="mt-3 space-y-2 text-sm">
           <li v-for="line in cart.cart.items" :key="line.id" class="flex justify-between gap-3">
             <div class="min-w-0">
@@ -252,6 +273,7 @@ const address = useAddressStore();
 const currency = useCurrencyStore();
 const coverage = useCoverageStore();
 const { quoteOrder, placeOrder } = useCheckoutHelper();
+const { listProducts } = useProductHelper();
 const router = useRouter();
 const toast = useToast();
 const client = useSanctumClient();
@@ -279,7 +301,13 @@ const form = reactive(blankForm());
 
 onMounted(async () => {
   loading.value = true;
-  await Promise.all([cart.refresh(true), address.fetchAll(), fetchWallets(), coverage.ensureLoaded()]);
+  await Promise.all([
+    cart.refresh(true),
+    address.fetchAll(),
+    fetchWallets(),
+    coverage.ensureLoaded(),
+    ensureExchangeRate(),
+  ]);
   selectedAddressId.value = address.defaultAddress?.id ?? null;
   if (!address.addresses.length) showAddForm.value = true;
   loading.value = false;
@@ -308,6 +336,15 @@ const refreshQuote = async () => {
     } : null;
   }
   quoteLoading.value = false;
+};
+
+const ensureExchangeRate = async () => {
+  if (currency.hasZwgRate) return;
+  const { data, error } = await listProducts({ per_page: 1 });
+  if (!error.value) {
+    const payload = (data.value as any)?.data ?? {};
+    currency.captureRateFromApi(payload.exchange_rate);
+  }
 };
 
 const fetchWallets = async () => {

@@ -215,6 +215,7 @@ class CheckoutService
                 'total_usd' => $total,
                 'usd_to_zwg_rate' => $rate?->rate,
                 'payment_reference' => $orderNumber,
+                'delivery_code' => $this->generateDeliveryCode(),
             ]);
 
             foreach ($lines as $line) {
@@ -271,6 +272,13 @@ class CheckoutService
                 'order' => $order->load(['items', 'shipments', 'mobileWallet:id,name,code']),
             ];
         });
+    }
+
+    private function generateDeliveryCode(): string
+    {
+        $len = (int) config('influencer.delivery_code_length', 6);
+
+        return str_pad((string) random_int(0, (10 ** $len) - 1), $len, '0', STR_PAD_LEFT);
     }
 
     private function resolveUnitPrice(Product $product, int $qty): float

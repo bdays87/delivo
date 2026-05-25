@@ -11,6 +11,7 @@ use App\Models\VendorKycDocument;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VendorService
 {
@@ -81,7 +82,7 @@ class VendorService
      * Stream a stored KYC document. Returns null if the disk path is missing
      * — caller decides the 404 response.
      */
-    public function streamKycDocument(VendorKycDocument $document): ?\Symfony\Component\HttpFoundation\StreamedResponse
+    public function streamKycDocument(VendorKycDocument $document): ?StreamedResponse
     {
         if (! Storage::disk($document->disk)->exists($document->path)) {
             return null;

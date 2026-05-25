@@ -52,4 +52,14 @@ class Influencer extends Model
     {
         return $this->hasMany(InfluencerSocialHandle::class);
     }
+
+    public function earnings(): HasMany
+    {
+        return $this->hasMany(InfluencerEarning::class);
+    }
+
+    public function payoutRequests(): HasMany
+    {
+        return $this->hasMany(PayoutRequest::class);
+    }
 }

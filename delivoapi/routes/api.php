@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\Admin\AdminExchangeRateController;
 use App\Http\Controllers\Api\Admin\AdminInfluencerController;
 use App\Http\Controllers\Api\Admin\AdminMobileWalletController;
 use App\Http\Controllers\Api\Admin\AdminModuleController;
+use App\Http\Controllers\Api\Admin\AdminOrderController;
+use App\Http\Controllers\Api\Admin\AdminPayoutController;
 use App\Http\Controllers\Api\Admin\AdminPlatformSettingsController;
 use App\Http\Controllers\Api\Admin\AdminProductController;
 use App\Http\Controllers\Api\Admin\AdminRoleController;
@@ -21,6 +23,7 @@ use App\Http\Controllers\Api\Customer\CartController;
 use App\Http\Controllers\Api\Customer\CheckoutController;
 use App\Http\Controllers\Api\Customer\OrderController;
 use App\Http\Controllers\Api\Influencer\InfluencerController;
+use App\Http\Controllers\Api\Influencer\InfluencerPayoutController;
 use App\Http\Controllers\Api\Influencer\InfluencerProductController;
 use App\Http\Controllers\Api\MobileWalletController;
 use App\Http\Controllers\Api\ProductController;
@@ -98,6 +101,8 @@ Route::prefix('v1')->group(function () {
         Route::get('orders', [OrderController::class, 'index'])->name('v1.orders.index');
         Route::get('orders/{orderNumber}', [OrderController::class, 'show'])
             ->where('orderNumber', '[A-Z0-9-]+')->name('v1.orders.show');
+        Route::post('orders/{orderNumber}/confirm-delivery', [OrderController::class, 'confirmDelivery'])
+            ->where('orderNumber', '[A-Z0-9-]+')->name('v1.orders.confirm-delivery');
 
         // Influencer self-service
         Route::post('influencer/apply', [InfluencerController::class, 'apply'])->name('v1.influencer.apply');
@@ -113,6 +118,18 @@ Route::prefix('v1')->group(function () {
             ->whereNumber('productId')->name('v1.influencer.products.code');
         Route::get('influencer/me/codes', [InfluencerProductController::class, 'codes'])
             ->name('v1.influencer.codes.index');
+
+        // Influencer earnings ledger + payout requests
+        Route::get('influencer/me/earnings/summary', [InfluencerPayoutController::class, 'summary'])
+            ->name('v1.influencer.earnings.summary');
+        Route::get('influencer/me/earnings', [InfluencerPayoutController::class, 'earnings'])
+            ->name('v1.influencer.earnings.index');
+        Route::get('influencer/me/payouts', [InfluencerPayoutController::class, 'index'])
+            ->name('v1.influencer.payouts.index');
+        Route::post('influencer/me/payouts', [InfluencerPayoutController::class, 'store'])
+            ->name('v1.influencer.payouts.store');
+        Route::delete('influencer/me/payouts/{id}', [InfluencerPayoutController::class, 'destroy'])
+            ->whereNumber('id')->name('v1.influencer.payouts.destroy');
 
         // Delivery provider self-service (apply, KYC, coverage selection)
         Route::post('provider/apply', [ProviderController::class, 'apply'])->name('v1.provider.apply');
@@ -209,6 +226,26 @@ Route::prefix('v1')->group(function () {
             Route::post('influencers/{influencer}/handles/{handle}/status', [AdminInfluencerController::class, 'setHandleStatus'])
                 ->whereNumber(['influencer', 'handle'])
                 ->name('v1.admin.influencers.handles.status');
+
+            // Admin order lifecycle — list + confirm payment received.
+            Route::get('orders', [AdminOrderController::class, 'index'])
+                ->name('v1.admin.orders.index');
+            Route::get('orders/{orderNumber}', [AdminOrderController::class, 'show'])
+                ->where('orderNumber', '[A-Z0-9-]+')->name('v1.admin.orders.show');
+            Route::post('orders/{orderNumber}/confirm-payment', [AdminOrderController::class, 'confirmPayment'])
+                ->where('orderNumber', '[A-Z0-9-]+')->name('v1.admin.orders.confirm-payment');
+
+            // Admin payout queue — approve/mark-paid/reject.
+            Route::get('payouts', [AdminPayoutController::class, 'index'])
+                ->name('v1.admin.payouts.index');
+            Route::get('payouts/{id}', [AdminPayoutController::class, 'show'])
+                ->whereNumber('id')->name('v1.admin.payouts.show');
+            Route::post('payouts/{id}/approve', [AdminPayoutController::class, 'approve'])
+                ->whereNumber('id')->name('v1.admin.payouts.approve');
+            Route::post('payouts/{id}/mark-paid', [AdminPayoutController::class, 'markPaid'])
+                ->whereNumber('id')->name('v1.admin.payouts.mark-paid');
+            Route::post('payouts/{id}/reject', [AdminPayoutController::class, 'reject'])
+                ->whereNumber('id')->name('v1.admin.payouts.reject');
 
             // Vehicle types (CRUD).
             Route::get('vehicle-types', [AdminVehicleTypeController::class, 'index'])

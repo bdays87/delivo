@@ -49,7 +49,9 @@ class Order extends Model
         'applied_coupon_code',
         'usd_to_zwg_rate',
         'payment_reference',
+        'delivery_code',
         'payment_confirmed_at',
+        'delivered_at',
         'cancellation_reason',
     ];
 
@@ -64,6 +66,7 @@ class Order extends Model
             'total_usd' => 'decimal:2',
             'usd_to_zwg_rate' => 'decimal:6',
             'payment_confirmed_at' => 'datetime',
+            'delivered_at' => 'datetime',
         ];
     }
 

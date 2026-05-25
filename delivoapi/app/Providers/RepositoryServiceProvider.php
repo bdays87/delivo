@@ -11,10 +11,12 @@ use App\Interfaces\Repositories\IDeliveryProviderInterface;
 use App\Interfaces\Repositories\IDeliveryProviderKycInterface;
 use App\Interfaces\Repositories\IDeliveryZoneInterface;
 use App\Interfaces\Repositories\IExchangeRateInterface;
+use App\Interfaces\Repositories\IInfluencerEarningInterface;
 use App\Interfaces\Repositories\IInfluencerInterface;
 use App\Interfaces\Repositories\IMobileWalletInterface;
 use App\Interfaces\Repositories\IModuleInterface;
 use App\Interfaces\Repositories\IOrderInterface;
+use App\Interfaces\Repositories\IPayoutRequestInterface;
 use App\Interfaces\Repositories\IPlatformSettingsInterface;
 use App\Interfaces\Repositories\IProductImageInterface;
 use App\Interfaces\Repositories\IProductInterface;
@@ -34,10 +36,12 @@ use App\Repositories\Eloquent\DeliveryProviderKycRepository;
 use App\Repositories\Eloquent\DeliveryProviderRepository;
 use App\Repositories\Eloquent\DeliveryZoneRepository;
 use App\Repositories\Eloquent\ExchangeRateRepository;
+use App\Repositories\Eloquent\InfluencerEarningRepository;
 use App\Repositories\Eloquent\InfluencerRepository;
 use App\Repositories\Eloquent\MobileWalletRepository;
 use App\Repositories\Eloquent\ModuleRepository;
 use App\Repositories\Eloquent\OrderRepository;
+use App\Repositories\Eloquent\PayoutRequestRepository;
 use App\Repositories\Eloquent\PlatformSettingsRepository;
 use App\Repositories\Eloquent\ProductImageRepository;
 use App\Repositories\Eloquent\ProductPriceTierRepository;
@@ -83,5 +87,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(IVehicleTypeInterface::class, VehicleTypeRepository::class);
         $this->app->bind(IInfluencerInterface::class, InfluencerRepository::class);
         $this->app->bind(ICouponInterface::class, CouponRepository::class);
+        $this->app->bind(IInfluencerEarningInterface::class, InfluencerEarningRepository::class);
+        $this->app->bind(IPayoutRequestInterface::class, PayoutRequestRepository::class);
     }
 }

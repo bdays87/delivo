@@ -45,7 +45,9 @@ export interface Order {
   applied_coupon_code: string | null;
   usd_to_zwg_rate: string | null;
   payment_reference: string;
+  delivery_code: string | null;
   payment_confirmed_at: string | null;
+  delivered_at: string | null;
   cancellation_reason: string | null;
   created_at: string;
   items?: OrderItem[];

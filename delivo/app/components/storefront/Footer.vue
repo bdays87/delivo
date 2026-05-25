@@ -34,6 +34,11 @@
       <div>
         <div class="mb-4 text-sm font-semibold opacity-60">Shop</div>
         <ul class="space-y-2 text-sm">
+          <li>
+            <NuxtLink to="/ai-shopping-assistant" class="opacity-80 hover:opacity-100">
+              AI Shopping Assistant
+            </NuxtLink>
+          </li>
           <li><a class="opacity-80 hover:opacity-100">Groceries</a></li>
           <li><a class="opacity-80 hover:opacity-100">Fashion</a></li>
           <li><a class="opacity-80 hover:opacity-100">Electronics</a></li>
@@ -60,6 +65,7 @@
           <li><NuxtLink to="/providers/apply" class="opacity-80 hover:opacity-100">Deliver on Delivo</NuxtLink></li>
           <li><NuxtLink to="/about/providers" class="opacity-80 hover:opacity-100">How delivery works</NuxtLink></li>
           <li><NuxtLink to="/influencers/apply" class="opacity-80 hover:opacity-100">Promote on Delivo</NuxtLink></li>
+          <li><NuxtLink to="/about/influencers" class="opacity-80 hover:opacity-100">How affiliate marketing works</NuxtLink></li>
           <li><NuxtLink to="/about/sellers" class="opacity-80 hover:opacity-100">How selling works</NuxtLink></li>
           <li><NuxtLink to="/about/shoppers" class="opacity-80 hover:opacity-100">How shopping works</NuxtLink></li>
         </ul>

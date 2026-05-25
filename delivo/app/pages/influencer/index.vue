@@ -8,9 +8,17 @@
           it across your channels.
         </p>
       </div>
-      <NuxtLink to="/influencers/apply" class="btn btn-ghost rounded-full">
-        <Icon name="lucide:user-round-cog" class="h-4 w-4" /> Profile & handles
-      </NuxtLink>
+      <div class="flex flex-wrap gap-2">
+        <NuxtLink to="/influencer/earnings" class="btn btn-ghost rounded-full">
+          <Icon name="lucide:line-chart" class="h-4 w-4" /> Earnings
+        </NuxtLink>
+        <NuxtLink to="/influencer/payouts" class="btn btn-primary rounded-full">
+          <Icon name="lucide:wallet" class="h-4 w-4" /> Payouts
+        </NuxtLink>
+        <NuxtLink to="/influencers/apply" class="btn btn-ghost rounded-full">
+          <Icon name="lucide:user-round-cog" class="h-4 w-4" /> Profile
+        </NuxtLink>
+      </div>
     </div>
 
     <div class="mt-6 flex flex-wrap gap-2">

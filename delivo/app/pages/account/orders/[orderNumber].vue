@@ -39,6 +39,46 @@
         </div>
       </section>
 
+      <section
+        v-if="canConfirmDelivery"
+        class="rounded-3xl border border-info/40 bg-info/5 p-5 text-sm"
+      >
+        <div class="flex items-start gap-3">
+          <Icon name="lucide:package-check" class="h-5 w-5 text-info" />
+          <div class="flex-1">
+            <div class="font-semibold">Confirm delivery</div>
+            <p class="mt-1 opacity-80">
+              When the rider arrives, share this code with them so they know it's the right
+              delivery. Then enter the code below to close out the order.
+            </p>
+            <div v-if="store.current.delivery_code" class="mt-3 inline-flex items-center gap-2 rounded-2xl border border-base-300 bg-base-100 px-4 py-2">
+              <span class="text-xs uppercase tracking-wider opacity-60">Your code</span>
+              <span class="font-mono text-xl font-extrabold tracking-widest">{{ store.current.delivery_code }}</span>
+            </div>
+            <form class="mt-3 flex flex-wrap gap-2" @submit.prevent="onConfirmDelivery">
+              <input
+                v-model="deliveryCodeInput"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                placeholder="Enter code"
+                class="input input-bordered w-40 font-mono"
+                maxlength="6"
+              />
+              <button
+                type="submit"
+                class="btn btn-primary rounded-full"
+                :disabled="!deliveryCodeInput || confirming"
+              >
+                <span v-if="confirming" class="loading loading-spinner loading-xs"></span>
+                Confirm delivery
+              </button>
+            </form>
+            <p v-if="deliveryError" class="mt-2 text-xs text-error">{{ deliveryError }}</p>
+          </div>
+        </div>
+      </section>
+
       <section class="rounded-3xl border border-base-300 bg-base-100 p-6">
         <h2 class="text-sm font-semibold uppercase tracking-wider opacity-70">Items</h2>
         <ul class="mt-3 divide-y divide-base-300">
@@ -122,8 +162,33 @@ definePageMeta({ middleware: ['auth'] });
 const route = useRoute();
 const store = useOrderStore();
 const currency = useCurrencyStore();
+const toast = useToast();
+const { confirmDelivery } = useOrderHelper();
 
 const orderNumber = computed(() => route.params.orderNumber as string);
+
+const deliveryCodeInput = ref('');
+const confirming = ref(false);
+const deliveryError = ref('');
+
+const canConfirmDelivery = computed(() =>
+  store.current && ['PAID', 'OUT_FOR_DELIVERY'].includes(store.current.status as string),
+);
+
+const onConfirmDelivery = async () => {
+  if (!deliveryCodeInput.value.trim()) return;
+  confirming.value = true;
+  deliveryError.value = '';
+  const { status, error } = await confirmDelivery(orderNumber.value, deliveryCodeInput.value.trim());
+  if (status?.value) {
+    toast.success({ title: 'Delivery confirmed', message: 'Thank you!', position: 'topRight', layout: 2 });
+    deliveryCodeInput.value = '';
+    await store.fetchOne(orderNumber.value);
+  } else {
+    deliveryError.value = (error?.value as any)?.data?.message || 'Could not confirm delivery.';
+  }
+  confirming.value = false;
+};
 
 onMounted(() => store.fetchOne(orderNumber.value));
 

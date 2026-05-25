@@ -70,7 +70,7 @@
         <div class="rounded-2xl border border-base-300 bg-base-200/40 p-5">
           <h3 class="font-semibold">Currency toggle</h3>
           <p class="mt-1 text-sm opacity-70">
-            Switch between USD and ZWG at the top of the header. Vendor prices are stored in USD;
+            Switch between USD and ZWG at checkout. Vendor prices are stored in USD;
             ZWG totals use the rate published by Delivo's admin team.
           </p>
         </div>
